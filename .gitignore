@@ -1,0 +1,16 @@
+# general files
+*.png
+*.jpg
+*.env
+
+# backend (python)
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info
+__pycache__
+*.mypy
+*.mypy_cache
+
