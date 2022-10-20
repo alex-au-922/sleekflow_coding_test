@@ -1,6 +1,6 @@
 from sys import version
 
-from .. import __version__
+from ..config.version_config import __version__
 
 
 def test_python_version() -> None:
