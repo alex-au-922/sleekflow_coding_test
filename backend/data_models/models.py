@@ -41,7 +41,7 @@ class WorkSpace(Base):
 
     members = relationship("Account", secondary = WorkSpaceAccountLink, back_populates = "workspaces")
     todolists = relationship("TodoList", back_populates = "workspace")
-
+    todos = relationship("Todo", back_populates = "workspace")
 class TodoList(Base):
     __tablename__ = "todo_list"
 
