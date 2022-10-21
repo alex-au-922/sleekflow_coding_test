@@ -1,16 +1,8 @@
-import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from util.helper.string import StringHash, StringHashFactory
+from util.helper.string import StringHash
 from data_models import DatabaseConnection
 from data_models.models import Account
-
-@pytest.fixture
-def hasher() -> StringHash:
-    """Return a StringHash object"""
-    
-    return StringHashFactory().get_hasher("blake2b")
-
 class TestModifyPassword:
     """Test the modify user password endpoint"""
 
@@ -39,7 +31,7 @@ class TestModifyPassword:
         response_json = response.json()
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
-        assert isinstance(response_json["data"], int)
+        assert response_json["data"] is None
         assert response_json["msg"] == "Password updated successfully."
 
         with DatabaseConnection() as db:
@@ -82,7 +74,7 @@ class TestModifyPassword:
         response_json = response.json()
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
-        assert isinstance(response_json["data"], int)
+        assert response_json["data"] is None
         assert response_json["msg"] == "Password updated successfully."
 
         with DatabaseConnection() as db:
@@ -119,6 +111,34 @@ class TestModifyPassword:
         assert response_json["data"] is None
         assert response_json["msg"] is None
     
+    def test_no_user_raises(self, client: TestClient) -> None:
+        """Test that when there is no valid user, it raises an error."""
+
+        client.post(
+            "/api/user/",
+            json = {
+                "username": "testing",
+                "email": "abc@hello.com",
+                "password": "qwqjdkjwlqrqo",
+            }
+        )
+
+        response = client.put(
+            "/api/user/password/",
+            json = {
+                "username": "testin",
+                "old_password": "qwqjdkjwlqrq",
+                "new_password": "qwqjdkjwl",
+            }
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        response_json = response.json()
+        assert response_json["error"] == "InvalidCredentialsError"
+        assert response_json["error_msg"] == "Invalid credentials."
+        assert response_json["data"] is None
+        assert response_json["msg"] is None
+
     def test_old_password_incorrect_raises(self, client: TestClient) -> None:
         """Test that if the old password is incorrect, it raises an error."""
 
@@ -142,8 +162,8 @@ class TestModifyPassword:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         response_json = response.json()
-        assert response_json["error"] == "UnauthenticatedError"
-        assert response_json["error_msg"] == "Incorrect old password."
+        assert response_json["error"] == "InvalidCredentialsError"
+        assert response_json["error_msg"] == "Invalid credentials."
         assert response_json["data"] is None
         assert response_json["msg"] is None
 

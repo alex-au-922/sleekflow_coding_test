@@ -1,8 +1,15 @@
 from typing import Generator
 import pytest
 from fastapi.testclient import TestClient
+from util.helper.string import StringHash, StringHashFactory
 from ...main import app
 from data_models import Base, Engine
+
+@pytest.fixture
+def hasher() -> StringHash:
+    """Return a StringHash object"""
+    
+    return StringHashFactory().get_hasher("blake2b")
 
 @pytest.fixture
 def db_teardown_and_setup() -> Generator[None, None, None]:

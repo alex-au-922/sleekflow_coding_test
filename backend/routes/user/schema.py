@@ -1,5 +1,5 @@
 from pydantic import BaseModel, validator, Field
-from util.helper import is_valid_email, random_string
+from util.helper.string import is_email_format, random_string
 
 class CreateUserModel(BaseModel):
     """Create user model class for api"""
@@ -19,7 +19,7 @@ class CreateUserModel(BaseModel):
     @validator("email")
     def email_must_contain_at_symbol(cls, v: str) -> str:
         """Validate that email must be valid"""
-        if not is_valid_email(v):
+        if not is_email_format(v):
             raise ValueError(f'Email "{v}" is invalid!')
         return v
     

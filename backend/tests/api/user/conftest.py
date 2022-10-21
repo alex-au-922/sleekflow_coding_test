@@ -1,7 +1,7 @@
 from typing import List
 import pytest
 from pytest import FixtureRequest
-from util.helper import random_string
+from util.helper.string import random_string
 
 short_random_strings: List[str] = [
     random_string(5) for _ in range(5)

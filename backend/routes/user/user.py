@@ -1,10 +1,11 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
-from .schemas.user import UpdatePasswordModel, CreateUserModel
+from .schema import UpdatePasswordModel, CreateUserModel
 from data_models import DatabaseConnection
 from data_models.models import Account
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, NoResultFound # type: ignore
 from util.helper.string import StringHashFactory
+from util.exceptions import (DuplicateError, InvalidCredentialsError, InternalServerError)
 from typing import Final
 
 router = APIRouter()
@@ -41,7 +42,7 @@ def create_user(user: CreateUserModel) -> JSONResponse:
             return JSONResponse(
                 status_code=status.HTTP_409_CONFLICT,
                 content={
-                    "error": "DuplicateError",
+                    "error": DuplicateError.__name__,
                     "error_msg": f'Username "{user.username}" already exists.',
                     "data": None,
                     "msg": None,
@@ -51,7 +52,7 @@ def create_user(user: CreateUserModel) -> JSONResponse:
             return JSONResponse(
                 status_code=status.HTTP_409_CONFLICT,
                 content={
-                    "error": "DuplicateError",
+                    "error": DuplicateError.__name__,
                     "error_msg": f'Email "{user.email}" already exists.',
                     "data": None,
                     "msg": None,
@@ -72,7 +73,7 @@ def create_user(user: CreateUserModel) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
-                "error": e.__class__.__name__,
+                "error": InternalServerError.__name__,
                 "error_msg": str(e),
                 "data": None,
                 "msg": None,
@@ -87,16 +88,8 @@ def update_user_password(user: UpdatePasswordModel) -> JSONResponse:
         with DatabaseConnection() as session:
             query_user: Account = session.query(Account).filter(Account.username == user.username).one()
             old_password_salt = query_user.password_salt
-            if hasher.hash(string = user.old_password,salt = old_password_salt) != query_user.password_hash:
-                return JSONResponse(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    content={
-                        "error": "UnauthenticatedError",
-                        "error_msg": "Incorrect old password.",
-                        "data": None,
-                        "msg": None,
-                    },
-                )
+            if not hasher.verify(string = user.old_password,salt = old_password_salt, hash = query_user.password_hash):
+                raise InvalidCredentialsError("Invalid credentials.")
             
             new_password_hash = hasher.hash(string=user.new_password, salt=user.new_password_salt)
             query_user.password_hash = new_password_hash
@@ -108,15 +101,25 @@ def update_user_password(user: UpdatePasswordModel) -> JSONResponse:
             content={
                 "error": None,
                 "error_msg": None,
-                "data": query_user.user_id,
+                "data": None,
                 "msg": "Password updated successfully.",
+            },
+        )
+    except (NoResultFound, InvalidCredentialsError) as e:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error": InvalidCredentialsError.__name__,
+                "error_msg": 'Invalid credentials.',
+                "data": None,
+                "msg": None,
             },
         )
     except Exception as e:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
-                "error": e.__class__.__name__,
+                "error": InternalServerError.__name__,
                 "error_msg": str(e),
                 "data": None,
                 "msg": None,
