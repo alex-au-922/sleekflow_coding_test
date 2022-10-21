@@ -8,7 +8,6 @@ except ImportError:
 import os
 from typing import Final
 
-
 class __BackendConfig:
     def __init__(self) -> None:
         self.__host = os.getenv("BACKEND_HOST", "localhost")
