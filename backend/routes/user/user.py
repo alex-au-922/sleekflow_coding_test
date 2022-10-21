@@ -16,7 +16,8 @@ hasher: Final = StringHashFactory().get_hasher("blake2b")
 def create_user(user: CreateUserModel) -> JSONResponse:
     """Create a user."""
 
-    password_hash = hasher.hash(string=user.password, salt=user.password_salt)
+    salt = hasher.create_salt()
+    password_hash = hasher.hash(string=user.password, salt=salt)
     
     try:
         with DatabaseConnection() as session:
@@ -24,7 +25,7 @@ def create_user(user: CreateUserModel) -> JSONResponse:
                 username=user.username,
                 email=user.email,
                 password_hash=password_hash,
-                password_salt=user.password_salt,
+                password_salt=salt,
             )
             session.add(new_user)
             session.commit()
@@ -91,9 +92,10 @@ def update_user_password(user: UpdatePasswordModel) -> JSONResponse:
             if not hasher.verify(string = user.old_password,salt = old_password_salt, hash = query_user.password_hash):
                 raise InvalidCredentialsError("Invalid credentials.")
             
-            new_password_hash = hasher.hash(string=user.new_password, salt=user.new_password_salt)
+            new_password_salt = hasher.create_salt()
+            new_password_hash = hasher.hash(string=user.new_password, salt=new_password_salt)
             query_user.password_hash = new_password_hash
-            query_user.password_salt = user.new_password_salt
+            query_user.password_salt = new_password_salt
             session.commit()
 
         return JSONResponse(

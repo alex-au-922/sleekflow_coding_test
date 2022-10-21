@@ -4,10 +4,9 @@ from config.project_config import BACKEND_CONFIG
 from config.version_config import __version__
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from .middlewares import validation_exception_handler
+from middlewares import validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from data_models import Base, Engine
 from routes import router
 
 app = FastAPI(title="SleekFlow TODOs API Coding Test", version=__version__)
