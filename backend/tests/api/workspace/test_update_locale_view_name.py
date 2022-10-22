@@ -49,7 +49,7 @@ class TestChangeWorkspaceAlias():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'User "{user1.username}" has changed the name of workspace "workspace_testing" to "{short_random_string}" successfully.'
+        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "workspace_testing" alias to "{short_random_string}" successfully.'
 
         with DatabaseConnection() as db:
             query_user1: Account = db.query(Account).filter(Account.username == user1.username).one()
@@ -96,7 +96,7 @@ class TestChangeWorkspaceAlias():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'User "{user1.username}" has changed the name of workspace "workspace_testing" to "{short_random_string}" successfully.'
+        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "workspace_testing" alias to "{short_random_string}" successfully.'
 
         with DatabaseConnection() as db:
             query_user1: Account = db.query(Account).filter(Account.username == user1.username).one()
@@ -122,7 +122,7 @@ class TestChangeWorkspaceAlias():
         client.put(
             "/api/workspace/invite/",
             json = {
-                "owern_username": user1.username,
+                "owner_username": user1.username,
                 "workspace_default_name": "workspace_testing",
                 "invitee_username": user2.username,
             },
@@ -146,7 +146,7 @@ class TestChangeWorkspaceAlias():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'User "{user1.username}" has changed the name of workspace "workspace_testing" to "{user1_locale_alias}" successfully.'
+        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "workspace_testing" alias to "{user1_locale_alias}" successfully.'
 
         user2_locale_alias = short_random_string[::-1]
 
@@ -165,7 +165,7 @@ class TestChangeWorkspaceAlias():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'User "{user2.username}" has changed the name of workspace "workspace_testing" to "{user2_locale_alias}" successfully.'
+        assert response_json["msg"] == f'User "{user2.username}" has changed the workspace "workspace_testing" alias to "{user2_locale_alias}" successfully.'
 
         with DatabaseConnection() as db:
             query_user1: Account = db.query(Account).filter(Account.username == user1.username).one()
@@ -174,7 +174,7 @@ class TestChangeWorkspaceAlias():
             assert workspace_account_record.locale_alias == user1_locale_alias
         
         with DatabaseConnection() as db:
-            query_user2: Account = db.query(Account).filter(Account.username == user1.username).one()
+            query_user2: Account = db.query(Account).filter(Account.username == user2.username).one()
             workspace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == "workspace_testing").one()
             workspace_account_record = db.query(WorkSpaceAccountLink).filter(WorkSpaceAccountLink.user_id == query_user2.user_id, WorkSpaceAccountLink.workspace_id == workspace.workspace_id).one()
             assert workspace_account_record.locale_alias == user2_locale_alias
@@ -227,7 +227,7 @@ class TestUsersleaveWorkspaceTokenError:
         )
 
         response = client.put(
-            "/api/workspace/leave/",
+            "/api/workspace/alias/",
             json = {
                 "username": user1.username,
                 "workspace_default_name": "workspace_testing",

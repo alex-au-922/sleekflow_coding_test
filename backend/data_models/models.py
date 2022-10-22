@@ -48,6 +48,7 @@ class TodoList(Base):
     __tablename__ = "todo_list"
 
     todolist_id = Column(BigInteger, primary_key = True)
+    todolist_name = Column(String(255), nullable=False)
     workspace_id = Column(BigInteger, ForeignKey("workspace.workspace_id", ondelete = "CASCADE"))
     
     workspace = relationship("WorkSpace", back_populates="todolists")
