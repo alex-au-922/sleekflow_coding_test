@@ -139,15 +139,15 @@ class TestCreateWorkSpaceTokenError:
 class TestCreateWorkSpaceInputError:
     """Test the create workspace with input error."""
 
-    def test_create_workspace_creator_not_exists_raises(self, client: TestClient) -> None:
+    def test_create_workspace_creator_not_exists_raises(self, client: TestClient, test_user_info: TestUserInfo) -> None:
         """Test that if the creator of the workspace does not exist, an error will be raised."""
 
-        leaky_access_token = create_token("testing", 100)
+        leaky_access_token = create_token(test_user_info.username, 100)
 
         response = client.post(
             "/api/workspace/",
             json = {
-                "username": "testing",
+                "username": test_user_info.username,
                 "workspace_default_name": "workspace_testing",
             },
             headers={"Authorization": f"Bearer {leaky_access_token}"}
@@ -156,7 +156,7 @@ class TestCreateWorkSpaceInputError:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         response_json = response.json()
         assert response_json["error"] == "NotFoundError"
-        assert response_json["error_msg"] == f'User "testing" not found.'
+        assert response_json["error_msg"] == f'User "{test_user_info.username}" not found.'
         assert response_json["msg"] is None
         assert response_json["data"] is None
 

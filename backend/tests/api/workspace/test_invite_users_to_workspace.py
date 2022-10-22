@@ -60,6 +60,8 @@ class TestInviteUsersToWorkspace():
             for member in workspace.members:
                 user: Account = db.query(Account).filter(Account.user_id == member.user_id).one()
                 assert user.username in [user1.username, user2.username]
+            
+            assert len(workspace.members) == 2
 
 class TestInviteUsersToWorkspaceTokenError:
     """Test invite users to workspace with token error"""
@@ -162,7 +164,39 @@ class TestInviteUsersToWorkspaceTokenError:
         assert response_json["msg"] is None
 
 class TestInviteUsersToWorkSpaceInputError:
-    """Test the create workspace with input error."""
+    """Test the invite user to workspace with input error."""
+
+    def test_invite_workspace_not_owner_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+        """Test that if the owner is not the owner, an error will be raised."""
+
+        user1, access_token1 = login_users[0]
+        user2, access_token2 = login_users[1]
+
+        client.post(
+            "/api/workspace/",
+            json = {
+                "username": user1.username,
+                "workspace_default_name": "workspace_testing",
+            },
+            headers={"Authorization": f"Bearer {access_token1}"}
+        )
+
+        response = client.put(
+            "/api/workspace/invite/",
+            json = {
+                "owner_username": user2.username,
+                "workspace_default_name": "workspace_testing",
+                "invitee_username": user1.username,
+            },
+            headers={"Authorization": f"Bearer {access_token2}"}
+        )
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        response_json = response.json()
+        assert response_json["error"] == "UnauthorizedError"
+        assert response_json["error_msg"] == f'Unauthorized action.'
+        assert response_json["msg"] is None
+        assert response_json["data"] is None
 
     def test_invite_user_workspace_no_workspace_exists_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
         """Test that if the workspace does not exist, an error will be raised."""

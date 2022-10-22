@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, Request
 from fastapi.responses import JSONResponse
 
 from util.exceptions.api_exceptions import InvalidTokenError, TokenExpiredError, UnauthorizedError
-from .schema import CreateWorkspaceModel, InviteWorkspaceModel, LeaveWorkspaceModel
+from .schema import CreateWorkspaceModel, InviteWorkspaceModel, LeaveWorkspaceModel, ChangeWorkspaceAliasModel
 from data_models import DatabaseConnection
 from data_models.models import Account, WorkSpace, WorkSpaceAccountLink
 from sqlalchemy.exc import IntegrityError, NoResultFound # type: ignore
@@ -157,6 +157,8 @@ def invite_user_to_workspace(request: Request, invite_model: InviteWorkspaceMode
             except NoResultFound as e:
                 raise NotFoundError(f'User "{invite_model.invitee_username}" not found.')
 
+            
+
             workspace_account_record = WorkSpaceAccountLink(
                 user_id = invitee.user_id,
                 workspace_id = workspace.workspace_id,
@@ -269,23 +271,25 @@ def leave_workspace(request: Request, leave_model: LeaveWorkspaceModel) -> JSONR
             try:
                 workspace: WorkSpace = session.query(WorkSpace).filter(WorkSpace.workspace_default_name == leave_model.workspace_default_name).one()
             except NoResultFound as e:
-                raise NotFoundError(f'Workspace "{invite_model.workspace_default_name}" not found.')
-
-            owner: Account = session.query(Account).filter(Account.username == invite_model.owner_username).one()
-
-            if workspace.workspace_owner_id != owner.user_id:
-                raise UnauthorizedError("Unauthorized action.")
+                raise NotFoundError(f'Workspace "{leave_model.workspace_default_name}" not found.')
+            try:
+                user: Account = session.query(Account).filter(Account.username == leave_model.username).one()
+            except NoResultFound as e:
+                raise NotFoundError(f'User "{leave_model.username}" not found.')
             
             try:
-                invitee: Account = session.query(Account).filter(Account.username == invite_model.invitee_username).one()
+                workspace_account_record: WorkSpaceAccountLink = session.query(WorkSpaceAccountLink).filter(WorkSpaceAccountLink.user_id == user.user_id, WorkSpaceAccountLink.workspace_id == workspace.workspace_id).one()
             except NoResultFound as e:
-                raise NotFoundError(f'User "{invite_model.invitee_username}" not found.')
+                raise NotFoundError(f'User "{leave_model.username}" has not joined workspace "{leave_model.workspace_default_name}".')
 
-            workspace_account_record = WorkSpaceAccountLink(
-                user_id = invitee.user_id,
-                workspace_id = workspace.workspace_id,
-            )
-            workspace.members.append(workspace_account_record)
+            if workspace.workspace_owner_id == user.user_id:
+                # delete all workspace_account_links
+                session.query(WorkSpaceAccountLink).filter(WorkSpaceAccountLink.workspace_id == workspace.workspace_id).delete()
+                # delete workspace
+                session.delete(workspace)
+            else:
+                session.delete(workspace_account_record)
+
             session.commit()
 
         return JSONResponse(
@@ -294,7 +298,7 @@ def leave_workspace(request: Request, leave_model: LeaveWorkspaceModel) -> JSONR
                 "error": None,
                 "error_msg": None,
                 "data": None,
-                "msg": f'Invited user "{invite_model.invitee_username}" to workspace "{invite_model.workspace_default_name}" successfully.',
+                "msg": f'User "{leave_model.username}" has left workspace "{leave_model.workspace_default_name}" successfully.',
             },
         )
     except NotFoundError as e:
@@ -303,7 +307,17 @@ def leave_workspace(request: Request, leave_model: LeaveWorkspaceModel) -> JSONR
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={
                     "error": NotFoundError.__name__,
-                    "error_msg": f'Workspace "{invite_model.workspace_default_name}" not found.',
+                    "error_msg": f'Workspace "{leave_model.workspace_default_name}" not found.',
+                    "data": None,
+                    "msg": None,
+                },
+            )
+        elif "User" in str(e) and "has not joined" in str(e):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={
+                    "error": NotFoundError.__name__,
+                    "error_msg": f'User "{leave_model.username}" has not joined workspace "{leave_model.workspace_default_name}".',
                     "data": None,
                     "msg": None,
                 },
@@ -313,21 +327,11 @@ def leave_workspace(request: Request, leave_model: LeaveWorkspaceModel) -> JSONR
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={
                     "error": NotFoundError.__name__,
-                    "error_msg": f'User "{invite_model.invitee_username}" not found.',
+                    "error_msg": f'User "{leave_model.username}" not found.',
                     "data": None,
                     "msg": None,
                 },
             )
-    except IntegrityError as e:
-        return JSONResponse(
-            status_code=status.HTTP_409_CONFLICT,
-            content={
-                "error": DuplicateError.__name__,
-                "error_msg": f'User "{invite_model.invitee_username}" has already joined workspace "{invite_model.workspace_default_name}".',
-                "data": None,
-                "msg": None,
-            },
-        )
     except UnauthorizedError as e:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -368,3 +372,7 @@ def leave_workspace(request: Request, leave_model: LeaveWorkspaceModel) -> JSONR
                 "msg": None,
             },
         )
+
+@router.put("/alias/")
+def change_workspace_alias(request: Request, change_alias_model: ChangeWorkspaceAliasModel) -> JSONResponse:
+    pass

@@ -7,6 +7,7 @@ from ...main import app
 from data_models import Base, Engine
 from itertools import permutations
 from dataclasses import dataclass
+from util.helper.string import random_string
 
 @pytest.fixture
 def hasher() -> StringHash:
@@ -49,5 +50,25 @@ def test_user_info(request: FixtureRequest) -> TestUserInfo:
 @pytest.fixture(params = permuted_test_user_infos)
 def permuted_test_user_info(request: FixtureRequest) -> Tuple[TestUserInfo, TestUserInfo]:
     """Return a tuple of two TestUserInfo objects"""
+    
+    return request.param
+
+short_random_strings: List[str] = [
+    random_string(5) for _ in range(5)
+]
+
+long_random_strings: List[str] = [
+    random_string(10) for _ in range(5)
+]
+
+@pytest.fixture(params = short_random_strings)
+def short_random_string(request: FixtureRequest) -> str:
+    """Return a short random string"""
+    
+    return request.param
+
+@pytest.fixture(params = long_random_strings)
+def long_random_string(request: FixtureRequest) -> str:
+    """Return a long random string"""
     
     return request.param
