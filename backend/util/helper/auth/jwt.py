@@ -1,9 +1,9 @@
 import jwt # type: ignore
-from jwt.exceptions import ExpiredSignatureError, InvalidKeyError # type: ignore
+from jwt.exceptions import ExpiredSignatureError, PyJWTError # type: ignore
 from typing import Dict
 from datetime import datetime, timedelta
 from util.types import Serializable
-from util.exceptions import UnauthorizedError, TokenExpiredError
+from util.exceptions import InvalidTokenError, TokenExpiredError
 from config.auth_tokens_config import AUTH_TOKENS_CONFIG
 
 class JWTHandler:
@@ -18,7 +18,7 @@ class JWTHandler:
 
         new_payload = {
             **payload,
-            "exp": datetime.now() + timedelta(seconds = self.__EXPIRES_DELTA)
+            "exp": datetime.utcnow() + timedelta(seconds = self.__EXPIRES_DELTA)
         }
         return new_payload
 
@@ -51,5 +51,5 @@ class JWTHandler:
             )
         except ExpiredSignatureError:
             raise TokenExpiredError("Token has expired.")
-        except InvalidKeyError:
-            raise UnauthorizedError("Invalid token.")
+        except PyJWTError:
+            raise InvalidTokenError("Invalid token.")

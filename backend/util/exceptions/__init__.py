@@ -8,4 +8,6 @@ from .api_exceptions import (
     InternalServerError,
     TokenExpiredError,
     UnauthorizedError,
+    InvalidTokenError,
+    NotFoundError,
 )

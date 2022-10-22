@@ -2,13 +2,15 @@ from sqlalchemy import Column, BigInteger, String, DateTime, ForeignKey, Foreign
 from sqlalchemy.orm import relationship
 from .connection import Base
 
-WorkSpaceAccountLink = Table(
-    "workspace_account_link",
-    Base.metadata,
-    Column("user_id", ForeignKey("account.user_id"), primary_key=True),
-    Column("workspace_id", ForeignKey("workspace.workspace_id"), primary_key = True),
-    Column("locale_view_name", String(255), nullable=True),
-)
+class WorkSpaceAccountLink(Base):
+    __tablename__ = "workspace_account_link"
+    user_id = Column(BigInteger, ForeignKey("account.user_id"), primary_key=True)
+    workspace_id = Column(BigInteger, ForeignKey("workspace.workspace_id"), primary_key = True)
+    
+    locale_alias = Column(String(255), nullable=True)
+
+    member = relationship("Account", back_populates="workspaces")
+    workspace = relationship("WorkSpace", back_populates="members")
 
 class Account(Base):
     __tablename__ = "account"
@@ -20,7 +22,7 @@ class Account(Base):
     password_salt = Column(String(255), nullable=False)
 
     refresh_token = relationship("Login", back_populates="user")
-    workspaces = relationship("WorkSpace", secondary = WorkSpaceAccountLink, back_populates = "members")
+    workspaces = relationship("WorkSpaceAccountLink", back_populates = "member")
 
 class Login(Base):
     __tablename__ = "login"
@@ -36,10 +38,10 @@ class WorkSpace(Base):
     __tablename__ = "workspace"
 
     workspace_id = Column(BigInteger, primary_key = True)
-    workspace_default_name = Column(String(255), nullable=False)
+    workspace_default_name = Column(String(255), nullable=False, unique=True, index = True)
     workspace_owner_id = Column(BigInteger, ForeignKey("account.user_id"))
 
-    members = relationship("Account", secondary = WorkSpaceAccountLink, back_populates = "workspaces")
+    members = relationship("WorkSpaceAccountLink", back_populates = "workspace")
     todolists = relationship("TodoList", back_populates = "workspace")
     todos = relationship("Todo", back_populates = "workspace")
 class TodoList(Base):

@@ -18,14 +18,13 @@ def create_token(username: str, exp_time: int) -> str:
     
     return jwt.encode({"username": username, "exp": time.time() + exp_time}, AUTH_TOKENS_CONFIG.secret_key, algorithm=AUTH_TOKENS_CONFIG.algorithm)
 
-class TestInviteUsersToWorkspace():
-    """Test inviting a user to a workspace"""
-
-    def test_invite_user_to_workspace(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+class TestUserLeaveWorkspace():
+    """Test that a user can leave a workspace."""
+   
+    def test_user_leave_workspace(self, client: TestClient, login_user: Tuple[TestUserInfo, str]) -> None:
         """Test that a user can be invited to a workspace."""
 
-        user1, access_token1 = login_users[0]
-        user2, _ = login_users[1]
+        user1, access_token1 = login_user
 
         client.post(
             "/api/workspace/",
@@ -37,11 +36,10 @@ class TestInviteUsersToWorkspace():
         )
 
         response = client.put(
-            "/api/workspace/invite/",
+            "/api/workspace/leave/",
             json = {
-                "owner_username": user1.username,
+                "username": user1.username,
                 "workspace_default_name": "workspace_testing",
-                "invitee_username": user2.username,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -51,24 +49,19 @@ class TestInviteUsersToWorkspace():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'Invited user "{user2.username}" to workspace "workspace_testing" successfully.'
+        assert response_json["msg"] == f'User "{user1.username}" has left workspace "workspace_testing" successfully.'
 
         with DatabaseConnection() as db:
-            workspace: WorkSpace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == "workspace_testing").one()
-            
-            member: WorkSpaceAccountLink
-            for member in workspace.members:
-                user: Account = db.query(Account).filter(Account.user_id == member.user_id).one()
-                assert user.username in [user1.username, user2.username]
+            query_user: Account = db.query(Account).filter(Account.username == user1.username).one()
+            assert query_user.workspaces == []
 
-class TestInviteUsersToWorkspaceTokenError:
-    """Test invite users to workspace with token error"""
+class TestUsersleaveWorkspaceTokenError:
+    """Test user leave workspace with token error"""
 
-    def test_invite_workspace_no_access_token_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+    def test_user_leave_workspace_no_access_token_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str]) -> None:
         """Test that a workspace cannot be created without access token."""
 
-        user1, access_token1 = login_users[0]
-        user2, _ = login_users[1]
+        user1, access_token1 = login_user
 
         client.post(
             "/api/workspace/",
@@ -80,13 +73,13 @@ class TestInviteUsersToWorkspaceTokenError:
         )
 
         response = client.put(
-            "/api/workspace/invite/",
+            "/api/workspace/leave/",
             json = {
-                "owner_username": user1.username,
+                "username": user1.username,
                 "workspace_default_name": "workspace_testing",
-                "invitee_username": user2.username,
             },
         )
+
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         response_json = response.json()
