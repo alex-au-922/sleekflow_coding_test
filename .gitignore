@@ -1,7 +1,10 @@
 # general files
 *.png
 *.jpg
-*.env
+*.env.*
+
+# database volumes
+database_dev/*
 
 # backend (python)
 *.pyc
@@ -13,4 +16,7 @@
 __pycache__
 *.mypy
 *.mypy_cache
-
+*venv
+.pre-commit-config.yaml
+.pytest_cache
+.mypy_cache
