@@ -11,8 +11,8 @@ from typing import Final
 class __AuthTokensConfig:
     def __init__(self) -> None:
         self.__secret_key = os.getenv("JWT_SECRET_KEY", "secret")
-        self.__refresh_token_expiry = int(os.getenv("REFRESH_TOKEN_EXP", 60 * 60 * 24 * 15))
-        self.__access_token_expiry = int(os.getenv("ACCESS_TOKEN_EXP", 60 * 15))
+        self.__refresh_token_expiry = int(os.getenv("REFRESH_TOKEN_EXPIRY", 60 * 60 * 24 * 15))
+        self.__access_token_expiry = int(os.getenv("ACCESS_TOKEN_EXPIRY", 60 * 15))
         self.__algorithm = os.getenv("JWT_ALGORITHM", "HS256")
 
     @property

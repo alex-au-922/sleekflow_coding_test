@@ -2,6 +2,7 @@
 *.png
 *.jpg
 *.env.*
+.env
 
 # database volumes
 database_dev/*

@@ -1,4 +1,3 @@
-import traceback
 import uvicorn
 import uvloop
 from config.project_config import BACKEND_CONFIG

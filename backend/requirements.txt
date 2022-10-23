@@ -1,5 +1,6 @@
 fastapi==0.85.1
 uvicorn==0.19.0
 uvloop==0.17.0
-tortoise-orm[asyncpg]==0.19.2
-orjson==3.8.0
+psycopg2-binary==2.9.4
+sqlalchemy==1.4.42
+pyjwt[crypto]==2.3.0
