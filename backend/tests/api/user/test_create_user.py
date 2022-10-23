@@ -22,12 +22,8 @@ class TestCreateUser:
         response_json = response.json()
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
-        assert isinstance(response_json["data"], int)
+        assert response_json["data"] is None
         assert response_json["msg"] == 'User "testing" created successfully.'
-
-        with DatabaseConnection() as db:
-            user = db.query(Account).filter(Account.username == "testing").one()
-            assert user.user_id == int(response_json["data"])
     
     def test_create_user_duplicate_username_raises(self, client: TestClient) -> None:
         """Test that a user cannot be created with a duplicate username."""

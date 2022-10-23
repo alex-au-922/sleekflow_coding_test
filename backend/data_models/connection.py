@@ -13,8 +13,9 @@ DB_CONN_URL = "postgresql://{}:{}@{}:{}/{}".format(
     DATABASE_CONFIG.database
 )
 
-Engine: Final = create_engine(DB_CONN_URL)
-SessionLocal: Final = sessionmaker(autocommit=False, autoflush=False, bind=Engine, expire_on_commit=False)
+Engine = create_engine(DB_CONN_URL)
+
+SessionLocal: Final = sessionmaker(autocommit=False, autoflush=True, bind=Engine, expire_on_commit=False)
 
 Base: Final = declarative_base()
 
