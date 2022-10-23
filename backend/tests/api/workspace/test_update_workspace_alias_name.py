@@ -11,6 +11,9 @@ class TestUserInfo:
     username: str
     email: str
     password: str
+class TestWorkspaceInfo:
+    workspace_default_name: str
+    workspace_alias: str
 
 def create_token(username: str, exp_time: int) -> str:
     """Return an expired token"""
@@ -20,7 +23,7 @@ def create_token(username: str, exp_time: int) -> str:
 class TestChangeWorkspaceAlias():
     """Test that a user can change the alias of a workspace."""
    
-    def test_user_change_workspace_alias(self, client: TestClient, login_user: Tuple[TestUserInfo, str], short_random_string: str) -> None:
+    def test_user_change_workspace_alias(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that a user can be invited to a workspace."""
 
         user1, access_token1 = login_user
@@ -29,7 +32,7 @@ class TestChangeWorkspaceAlias():
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -38,8 +41,8 @@ class TestChangeWorkspaceAlias():
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": short_random_string,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -49,15 +52,15 @@ class TestChangeWorkspaceAlias():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "workspace_testing" alias to "{short_random_string}" successfully.'
+        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "{test_workspace_info.workspace_default_name}" alias to "{test_workspace_info.workspace_alias}" successfully.'
 
         with DatabaseConnection() as db:
             query_user1: Account = db.query(Account).filter(Account.username == user1.username).one()
-            workspace: WorkSpace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == "workspace_testing").one()
+            workspace: WorkSpace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == test_workspace_info.workspace_default_name).one()
             workspace_account_record: WorkSpaceAccountLink = db.query(WorkSpaceAccountLink).filter(WorkSpaceAccountLink.user_id == query_user1.user_id, WorkSpaceAccountLink.workspace_id == workspace.workspace_id).one()
-            assert workspace_account_record.locale_alias == short_random_string
+            assert workspace_account_record.locale_alias == test_workspace_info.workspace_alias
     
-    def test_user_change_workspace_alias_idempotent(self, client: TestClient, login_user: Tuple[TestUserInfo, str], short_random_string: str) -> None:
+    def test_user_change_workspace_alias_idempotent(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that a user can be invited to a workspace."""
 
         user1, access_token1 = login_user
@@ -66,7 +69,7 @@ class TestChangeWorkspaceAlias():
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -75,8 +78,8 @@ class TestChangeWorkspaceAlias():
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": short_random_string,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -85,8 +88,8 @@ class TestChangeWorkspaceAlias():
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": short_random_string,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -96,15 +99,15 @@ class TestChangeWorkspaceAlias():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "workspace_testing" alias to "{short_random_string}" successfully.'
+        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "{test_workspace_info.workspace_default_name}" alias from "{test_workspace_info.workspace_alias}" to "{test_workspace_info.workspace_alias}" successfully.'
 
         with DatabaseConnection() as db:
             query_user1: Account = db.query(Account).filter(Account.username == user1.username).one()
-            workspace: WorkSpace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == "workspace_testing").one()
+            workspace: WorkSpace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == test_workspace_info.workspace_default_name).one()
             workspace_account_record: WorkSpaceAccountLink = db.query(WorkSpaceAccountLink).filter(WorkSpaceAccountLink.user_id == query_user1.user_id, WorkSpaceAccountLink.workspace_id == workspace.workspace_id).one()
-            assert workspace_account_record.locale_alias == short_random_string
+            assert workspace_account_record.locale_alias == test_workspace_info.workspace_alias
     
-    def test_user_change_workspace_alias_independent(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], short_random_string: str) -> None:
+    def test_user_change_workspace_alias_independent(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that a user can be invited to a workspace."""
 
         user1, access_token1 = login_users[0]
@@ -114,7 +117,7 @@ class TestChangeWorkspaceAlias():
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -123,20 +126,20 @@ class TestChangeWorkspaceAlias():
             "/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": user2.username,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
 
-        user1_locale_alias = short_random_string
+        user1_locale_alias = test_workspace_info.workspace_alias
 
         user1_response = client.put(
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": user1_locale_alias,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": user1_locale_alias,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -146,16 +149,16 @@ class TestChangeWorkspaceAlias():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "workspace_testing" alias to "{user1_locale_alias}" successfully.'
+        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "{test_workspace_info.workspace_default_name}" alias from "{None}" to "{user1_locale_alias}" successfully.'
 
-        user2_locale_alias = short_random_string[::-1]
+        user2_locale_alias = test_workspace_info.workspace_alias[::-1]
 
         user2_response = client.put(
             "/api/workspace/alias/",
             json = {
                 "username": user2.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": user2_locale_alias,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": user2_locale_alias,
             },
             headers={"Authorization": f"Bearer {access_token2}"}
         )
@@ -165,24 +168,24 @@ class TestChangeWorkspaceAlias():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'User "{user2.username}" has changed the workspace "workspace_testing" alias to "{user2_locale_alias}" successfully.'
+        assert response_json["msg"] == f'User "{user2.username}" has changed the workspace "{test_workspace_info.workspace_default_name}" alias from "{None}" to "{user2_locale_alias}" successfully.'
 
         with DatabaseConnection() as db:
             query_user1: Account = db.query(Account).filter(Account.username == user1.username).one()
-            workspace: WorkSpace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == "workspace_testing").one()
+            workspace: WorkSpace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == test_workspace_info.workspace_default_name).one()
             workspace_account_record: WorkSpaceAccountLink = db.query(WorkSpaceAccountLink).filter(WorkSpaceAccountLink.user_id == query_user1.user_id, WorkSpaceAccountLink.workspace_id == workspace.workspace_id).one()
             assert workspace_account_record.locale_alias == user1_locale_alias
         
         with DatabaseConnection() as db:
             query_user2: Account = db.query(Account).filter(Account.username == user2.username).one()
-            workspace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == "workspace_testing").one()
+            workspace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == test_workspace_info.workspace_default_name).one()
             workspace_account_record = db.query(WorkSpaceAccountLink).filter(WorkSpaceAccountLink.user_id == query_user2.user_id, WorkSpaceAccountLink.workspace_id == workspace.workspace_id).one()
             assert workspace_account_record.locale_alias == user2_locale_alias
 
 class TestUsersleaveWorkspaceTokenError:
     """Test user leave workspace with token error"""
 
-    def test_user_change_workspace_alias_no_access_token_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], short_random_string: str) -> None:
+    def test_user_change_workspace_alias_no_access_token_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that a workspace cannot be created without access token."""
 
         user1, access_token1 = login_user
@@ -191,7 +194,7 @@ class TestUsersleaveWorkspaceTokenError:
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -200,8 +203,8 @@ class TestUsersleaveWorkspaceTokenError:
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": short_random_string,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
             },
         )
 
@@ -212,7 +215,7 @@ class TestUsersleaveWorkspaceTokenError:
         assert response_json["data"] is None
         assert response_json["msg"] is None
     
-    def test_user_change_workspace_alias_wrong_access_token_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], short_random_string: str) -> None:
+    def test_user_change_workspace_alias_wrong_access_token_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the access token is wrong, an error will be raised."""
 
         user1, access_token1 = login_user
@@ -221,7 +224,7 @@ class TestUsersleaveWorkspaceTokenError:
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -230,8 +233,8 @@ class TestUsersleaveWorkspaceTokenError:
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": short_random_string,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
             },
             headers={"Authorization": f"Bearer {access_token1}1"}
         )
@@ -244,7 +247,7 @@ class TestUsersleaveWorkspaceTokenError:
         assert response_json["data"] is None
         assert response_json["msg"] is None
     
-    def test_user_change_workspace_alias_expired_access_token_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], short_random_string: str) -> None:
+    def test_user_change_workspace_alias_expired_access_token_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the access token has expired, an error will be raised."""
 
         user1, _ = login_user
@@ -255,7 +258,7 @@ class TestUsersleaveWorkspaceTokenError:
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {expired_access_token}"}
         )
@@ -264,8 +267,8 @@ class TestUsersleaveWorkspaceTokenError:
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": short_random_string,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
             },
             headers={"Authorization": f"Bearer {expired_access_token}"}
         )
@@ -281,7 +284,7 @@ class TestUsersleaveWorkspaceTokenError:
 class TestUserChangeWorkSpaceAliasInputError:
     """Test the user change workspace alias with input error."""
 
-    def test_user_change_workspace_alias_no_workspace_exists_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], short_random_string: str) -> None:
+    def test_user_change_workspace_alias_no_workspace_exists_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the workspace does not exist, an error will be raised."""
 
         user1, access_token1 = login_user
@@ -290,8 +293,8 @@ class TestUserChangeWorkSpaceAliasInputError:
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": short_random_string,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -299,11 +302,11 @@ class TestUserChangeWorkSpaceAliasInputError:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         response_json = response.json()
         assert response_json["error"] == "NotFoundError"
-        assert response_json["error_msg"] == f'Workspace "workspace_testing" not found.'
+        assert response_json["error_msg"] == f'Workspace "{test_workspace_info.workspace_default_name}" not found.'
         assert response_json["msg"] is None
         assert response_json["data"] is None
     
-    def test_user_change_workspace_alias_not_joined_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], short_random_string: str) -> None:
+    def test_user_change_workspace_alias_not_joined_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the user is not joined to the workspace, an error will be raised."""
 
         user1, access_token1 = login_users[0]
@@ -313,7 +316,7 @@ class TestUserChangeWorkSpaceAliasInputError:
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -322,8 +325,8 @@ class TestUserChangeWorkSpaceAliasInputError:
             "/api/workspace/alias/",
             json = {
                 "username": user2.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": short_random_string,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
             },
             headers={"Authorization": f"Bearer {access_token2}"}
         )
@@ -331,7 +334,7 @@ class TestUserChangeWorkSpaceAliasInputError:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         response_json = response.json()
         assert response_json["error"] == "NotFoundError"
-        assert response_json["error_msg"] == f'User "{user2.username}" not found in workspace "workspace_testing".'
+        assert response_json["error_msg"] == f'User "{user2.username}" not found in workspace "{test_workspace_info.workspace_default_name}".'
         assert response_json["msg"] is None
         assert response_json["data"] is None
 

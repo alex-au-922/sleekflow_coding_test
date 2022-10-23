@@ -12,6 +12,10 @@ class TestUserInfo:
     email: str
     password: str
 
+class TestWorkspaceInfo:
+    workspace_default_name: str
+    workspace_alias: str
+
 def create_token(username: str, exp_time: int) -> str:
     """Return an expired token"""
     
@@ -26,7 +30,7 @@ class TestUserGetAllWorkspace():
         user1, access_token1 = login_user
 
         response = client.get(
-            f"/api/workspace/?username={user1.username}",
+            f"/api/user/workspace/?username={user1.username}",
             headers={"Authorization": f"Bearer {access_token1}"}
         )
 
@@ -41,7 +45,7 @@ class TestUserGetAllWorkspace():
             query_user1: Account = db.query(Account).filter(Account.username == user1.username).one()
             assert query_user1.workspaces == []
     
-    def test_user_get_created_workspace(self, client: TestClient, login_user: Tuple[TestUserInfo, str]) -> None:
+    def test_user_get_created_workspace(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that a user can get his or her created workspace."""
 
         user1, access_token1 = login_user
@@ -50,18 +54,18 @@ class TestUserGetAllWorkspace():
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
 
         response = client.get(
-            f"/api/workspace/?username={user1.username}",
+            f"/api/user/workspace/?username={user1.username}",
             headers={"Authorization": f"Bearer {access_token1}"}
         )
 
         mock_api_result = [{
-            "workspace_default_name": "workspace_testing",
+            "workspace_default_name": test_workspace_info.workspace_default_name,
             "workspace_alias": None,
         }]
 
@@ -72,7 +76,7 @@ class TestUserGetAllWorkspace():
         assert response_json["data"] == mock_api_result
         assert response_json["msg"] == f'Get all workspaces joined by "{user1.username}" successfully.'
     
-    def test_user_get_created_workspace_with_alias(self, client: TestClient, login_user: Tuple[TestUserInfo, str]) -> None:
+    def test_user_get_created_workspace_with_alias(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that a user can get his or her created workspace with alias."""
 
         user1, access_token1 = login_user
@@ -81,7 +85,7 @@ class TestUserGetAllWorkspace():
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -90,20 +94,20 @@ class TestUserGetAllWorkspace():
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
-                "workspace_alias": "workspace_testing_alias",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "workspace_alias": test_workspace_info.workspace_alias,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
 
         response = client.get(
-            f"/api/workspace/?username={user1.username}",
+            f"/api/user/workspace/?username={user1.username}",
             headers={"Authorization": f"Bearer {access_token1}"}
         )
 
         mock_api_result = [{
-            "workspace_default_name": "workspace_testing",
-            "workspace_alias": "workspace_testing_alias",
+            "workspace_default_name": test_workspace_info.workspace_default_name,
+            "workspace_alias": test_workspace_info.workspace_alias,
         }]
 
         assert response.status_code == status.HTTP_200_OK
@@ -113,8 +117,10 @@ class TestUserGetAllWorkspace():
         assert response_json["data"] == mock_api_result
         assert response_json["msg"] == f'Get all workspaces joined by "{user1.username}" successfully.'
     
-    def test_user_get_created_and_joined_workspaces(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+    def test_user_get_created_and_joined_workspaces(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], permuted_test_workspace_info: Tuple[TestWorkspaceInfo, TestWorkspaceInfo]) -> None:
         """Test that a user can be invited to a workspace."""
+
+        test_workspace_info1, test_workspace_info2 = permuted_test_workspace_info
 
         user1, access_token1 = login_users[0]
         user2, access_token2 = login_users[1]
@@ -123,7 +129,7 @@ class TestUserGetAllWorkspace():
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info1.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -132,7 +138,7 @@ class TestUserGetAllWorkspace():
             f"/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info1.workspace_default_name,
                 "invitee_username": user2.username
             },
             headers={"Authorization": f"Bearer {access_token1}"}
@@ -142,23 +148,23 @@ class TestUserGetAllWorkspace():
             "/api/workspace/",
             json = {
                 "username": user2.username,
-                "workspace_default_name": "workspace_testing2",
+                "workspace_default_name": test_workspace_info2.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token2}"}
         )
 
         response = client.get(
-            f"/api/workspace/?username={user2.username}",
+            f"/api/user/workspace/?username={user2.username}",
             headers={"Authorization": f"Bearer {access_token2}"}
         )
 
         mock_api_result = [
             {
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info1.workspace_default_name,
                 "workspace_alias": None,
             },
             {
-                "workspace_default_name": "workspace_testing2",
+                "workspace_default_name": test_workspace_info2.workspace_default_name,
                 "workspace_alias": None,
             }
         ]
@@ -179,7 +185,7 @@ class TestUsersGetAllWorkspaceTokenError:
         user1, _ = login_user
 
         response = client.get(
-            f"/api/workspace/?username={user1.username}",
+            f"/api/user/workspace/?username={user1.username}",
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -195,7 +201,7 @@ class TestUsersGetAllWorkspaceTokenError:
         user1, access_token1 = login_user
 
         response = client.get(
-            f"/api/workspace/?username={user1.username}",
+            f"/api/user/workspace/?username={user1.username}",
             headers={"Authorization": f"Bearer {access_token1}1"}
         )
 
@@ -214,7 +220,7 @@ class TestUsersGetAllWorkspaceTokenError:
         expired_access_token = create_token(user1.username, -1)
 
         response = client.get(
-            f"/api/workspace/?username={user1.username}",
+            f"/api/user/workspace/?username={user1.username}",
             headers={"Authorization": f"Bearer {expired_access_token}"}
         )
 
@@ -234,7 +240,7 @@ class TestUserGetAllWorkspaceInputError:
         leaky_access_token = create_token(test_user_info.username, 100)
 
         response = client.get(
-            f"/api/workspace/?username={test_user_info.username}",
+            f"/api/user/workspace/?username={test_user_info.username}",
             headers={"Authorization": f"Bearer {leaky_access_token}"}
         )
 

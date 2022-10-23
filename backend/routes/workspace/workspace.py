@@ -1,16 +1,15 @@
 from fastapi import APIRouter, status, Request
 from fastapi.responses import JSONResponse
 
-from util.exceptions.api_exceptions import InvalidTokenError, TokenExpiredError, UnauthorizedError
 from .schema import CreateWorkspaceModel, InviteWorkspaceModel, LeaveWorkspaceModel, ChangeWorkspaceAliasModel
 from data_models import DatabaseConnection
-from data_models.models import Account, WorkSpace, WorkSpaceAccountLink
+from data_models.models import Account, Todo, TodoList, WorkSpace, WorkSpaceAccountLink
 from sqlalchemy.exc import IntegrityError, NoResultFound # type: ignore
 from util.helper.string import StringHashFactory
 from util.helper.auth import JWTHandler
-from util.exceptions import (DuplicateError, NotFoundError, InternalServerError)
+from util.exceptions import (DuplicateError, NotFoundError, InternalServerError, InvalidTokenError, TokenExpiredError, UnauthorizedError)
 from typing import Final, List, Optional, Tuple
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query # type: ignore
 
 router = APIRouter()
 
@@ -19,8 +18,8 @@ jwt_handler = JWTHandler()
 hasher: Final = StringHashFactory().get_hasher("blake2b")
 
 @router.get("/")
-def get_all_workspaces(request: Request, username: str) -> JSONResponse:
-    """For the user with username, get all workspaces he or she has."""
+def get_all_todolists_todos(request: Request, username: str, workspace_default_name: str) -> JSONResponse:
+    """Get a list of all workspaces"""
     
     try:
         authorization: str = request.headers.get("Authorization")
@@ -36,24 +35,45 @@ def get_all_workspaces(request: Request, username: str) -> JSONResponse:
         
         if username != payload["username"]:
             raise UnauthorizedError("Unauthorized action.")
-
-        with DatabaseConnection() as session:    
-            user: Account = session.query(Account).filter(Account.username == username).one()        
+        
+        with DatabaseConnection() as session:
+            try:    
+                user: Account = session.query(Account).filter(Account.username == username).one()        
+            except NoResultFound:
+                raise NotFoundError(f'User "{username}" not found.')
+            try:
+                workspace: WorkSpace = session.query(WorkSpace).filter(WorkSpace.workspace_default_name == workspace_default_name).one()
+            except NoResultFound:
+                raise NotFoundError(f'Workspace "{workspace_default_name}" not found.')
+            try:
+                session.query(WorkSpaceAccountLink).filter(WorkSpaceAccountLink.user_id == user.user_id, WorkSpaceAccountLink.workspace_id == workspace.workspace_id).one()
+            except NoResultFound:
+                raise NotFoundError(f'User "{username}" has not joined workspace "{workspace_default_name}".')
             query: Query = (
                 session
-                    .query(WorkSpace)
+                    .query(Todo)
+                    .join(TodoList, TodoList.todolist_id == Todo.todolist_id)
+                    .join(WorkSpace, WorkSpace.workspace_id == TodoList.workspace_id)
                     .join(WorkSpaceAccountLink, WorkSpaceAccountLink.workspace_id == WorkSpace.workspace_id)
                     .join(Account, WorkSpaceAccountLink.user_id == user.user_id)
+                    .filter(WorkSpace.workspace_default_name == workspace_default_name)
                     .filter(Account.username == username)
-                    .add_columns(WorkSpaceAccountLink.locale_alias)
+                    .add_columns(TodoList.todolist_id, TodoList.todolist_name)
             )
-            query_result: List[Tuple[WorkSpace, Optional[str]]] = query.all()
-            workspaces_details = [
+            query_result: List[Tuple[Todo, str, str]] = query.all()
+            todo_details = [
                 {
-                    "workspace_default_name": workspace.workspace_default_name,
-                    "workspace_alias": workspace_alias,
+                    "todolist_id": todolist_id,
+                    "todolist_name": todolist_name,
+                    "todo_id": todo.todo_id,
+                    "todo_name": todo.name,
+                    "todo_description": todo.description,
+                    "todo_due_date": todo.due_date,
+                    "todo_priority": todo.priority,
+                    "todo_status": todo.status,
+                    "todo_last_modified": todo.last_modified,
                 }
-                for workspace, workspace_alias in query_result
+                for todo, todolist_id, todolist_name in query_result
             ]
             session.commit()
         return JSONResponse(
@@ -61,8 +81,8 @@ def get_all_workspaces(request: Request, username: str) -> JSONResponse:
             content={
                 "error": None,
                 "error_msg": None,
-                "data": workspaces_details,
-                "msg": f'Get all workspaces joined by "{username}" successfully.',
+                "data": todo_details,
+                "msg": f'Get all todos in workspace "{workspace_default_name}" successfully.',
             },
         )
     except NoResultFound as e:
@@ -116,7 +136,6 @@ def get_all_workspaces(request: Request, username: str) -> JSONResponse:
             },
         )
 
-
 @router.post("/")
 def create_workspace(request: Request, workspace: CreateWorkspaceModel) -> JSONResponse:
     """Create a workspace."""
@@ -156,7 +175,7 @@ def create_workspace(request: Request, workspace: CreateWorkspaceModel) -> JSONR
             content={
                 "error": None,
                 "error_msg": None,
-                "data": new_workspace.workspace_id,
+                "data": None,
                 "msg": f'Workspace "{new_workspace.workspace_default_name}" created successfully.',
             },
         )
@@ -261,7 +280,7 @@ def invite_user_to_workspace(request: Request, invite_model: InviteWorkspaceMode
                 workspace_id = workspace.workspace_id,
             )
 
-            workspace.members.append(workspace_account_record)
+            session.add(workspace_account_record)
             session.commit()
 
         return JSONResponse(
@@ -345,7 +364,7 @@ def invite_user_to_workspace(request: Request, invite_model: InviteWorkspaceMode
             },
         )
 
-@router.delete("/leave/")
+@router.delete("/")
 def leave_workspace(request: Request, leave_model: LeaveWorkspaceModel) -> JSONResponse:
     """When a user wants to leave the workspace"""
 
@@ -503,7 +522,8 @@ def change_workspace_alias(request: Request, change_alias_model: ChangeWorkspace
             except NoResultFound as e:
                 raise NotFoundError(f'User "{change_alias_model.username}" has not joined workspace "{change_alias_model.workspace_default_name}".')
 
-            workspace_account_record.locale_alias = change_alias_model.workspace_alias
+            workspace_account_record_orig_alias = workspace_account_record.alias
+            workspace_account_record.locale_alias = change_alias_model.new_workspace_alias
             session.commit()
         
         return JSONResponse(
@@ -512,7 +532,7 @@ def change_workspace_alias(request: Request, change_alias_model: ChangeWorkspace
                 "error": None,
                 "error_msg": None,
                 "data": None,
-                "msg": f'User "{change_alias_model.username}" has changed the workspace "{change_alias_model.workspace_default_name}" alias to "{change_alias_model.workspace_alias}" successfully.',
+                "msg": f'User "{change_alias_model.username}" has changed the workspace "{change_alias_model.workspace_default_name}" alias from "{workspace_account_record_orig_alias}" to "{change_alias_model.new_workspace_alias}" successfully.',
             },
         )
     except NotFoundError as e:

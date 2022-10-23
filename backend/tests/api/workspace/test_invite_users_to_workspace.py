@@ -13,6 +13,10 @@ class TestUserInfo:
     email: str
     password: str
 
+class TestWorkspaceInfo:
+    workspace_default_name: str
+    workspace_alias: str
+
 def create_token(username: str, exp_time: int) -> str:
     """Return an expired token"""
     
@@ -21,7 +25,7 @@ def create_token(username: str, exp_time: int) -> str:
 class TestInviteUsersToWorkspace():
     """Test inviting a user to a workspace"""
 
-    def test_invite_user_to_workspace(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+    def test_invite_user_to_workspace(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that a user can be invited to a workspace."""
 
         user1, access_token1 = login_users[0]
@@ -31,7 +35,7 @@ class TestInviteUsersToWorkspace():
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -40,7 +44,7 @@ class TestInviteUsersToWorkspace():
             "/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": user2.username,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
@@ -51,10 +55,10 @@ class TestInviteUsersToWorkspace():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'Invited user "{user2.username}" to workspace "workspace_testing" successfully.'
+        assert response_json["msg"] == f'Invited user "{user2.username}" to workspace "{test_workspace_info.workspace_default_name}" successfully.'
 
         with DatabaseConnection() as db:
-            workspace: WorkSpace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == "workspace_testing").one()
+            workspace: WorkSpace = db.query(WorkSpace).filter(WorkSpace.workspace_default_name == test_workspace_info.workspace_default_name).one()
             
             member: WorkSpaceAccountLink
             for member in workspace.members:
@@ -66,7 +70,7 @@ class TestInviteUsersToWorkspace():
 class TestInviteUsersToWorkspaceTokenError:
     """Test invite users to workspace with token error"""
 
-    def test_invite_workspace_no_access_token_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+    def test_invite_workspace_no_access_token_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that a workspace cannot be created without access token."""
 
         user1, access_token1 = login_users[0]
@@ -76,7 +80,7 @@ class TestInviteUsersToWorkspaceTokenError:
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -85,7 +89,7 @@ class TestInviteUsersToWorkspaceTokenError:
             "/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": user2.username,
             },
         )
@@ -97,7 +101,7 @@ class TestInviteUsersToWorkspaceTokenError:
         assert response_json["data"] is None
         assert response_json["msg"] is None
     
-    def test_create_workspace_wrong_access_token_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+    def test_create_workspace_wrong_access_token_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the access token is wrong, an error will be raised."""
 
         user1, access_token1 = login_users[0]
@@ -107,7 +111,7 @@ class TestInviteUsersToWorkspaceTokenError:
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -116,7 +120,7 @@ class TestInviteUsersToWorkspaceTokenError:
             "/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": user2.username,
             },
             headers={"Authorization": f"Bearer {access_token1}1"}
@@ -129,19 +133,19 @@ class TestInviteUsersToWorkspaceTokenError:
         assert response_json["data"] is None
         assert response_json["msg"] is None
     
-    def test_create_workspace_expired_access_token_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+    def test_create_workspace_expired_access_token_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the access token has expired, an error will be raised."""
 
         user1, _ = login_users[0]
         user2, _ = login_users[1]
 
-        expired_access_token = create_token("testing", -1)
+        expired_access_token = create_token(user1.username, -1)
 
         client.post(
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {expired_access_token}"}
         )
@@ -150,7 +154,7 @@ class TestInviteUsersToWorkspaceTokenError:
             "/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": user2.username,
             },
             headers={"Authorization": f"Bearer {expired_access_token}"}
@@ -166,7 +170,7 @@ class TestInviteUsersToWorkspaceTokenError:
 class TestInviteUsersToWorkSpaceInputError:
     """Test the invite user to workspace with input error."""
 
-    def test_invite_workspace_not_owner_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+    def test_invite_workspace_not_owner_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the owner is not the owner, an error will be raised."""
 
         user1, access_token1 = login_users[0]
@@ -176,7 +180,7 @@ class TestInviteUsersToWorkSpaceInputError:
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -185,7 +189,7 @@ class TestInviteUsersToWorkSpaceInputError:
             "/api/workspace/invite/",
             json = {
                 "owner_username": user2.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": user1.username,
             },
             headers={"Authorization": f"Bearer {access_token2}"}
@@ -198,7 +202,7 @@ class TestInviteUsersToWorkSpaceInputError:
         assert response_json["msg"] is None
         assert response_json["data"] is None
 
-    def test_invite_user_workspace_no_workspace_exists_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+    def test_invite_user_workspace_no_workspace_exists_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the workspace does not exist, an error will be raised."""
 
         user1, access_token1 = login_users[0]
@@ -208,7 +212,7 @@ class TestInviteUsersToWorkSpaceInputError:
             "/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": user2.username,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
@@ -217,11 +221,11 @@ class TestInviteUsersToWorkSpaceInputError:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         response_json = response.json()
         assert response_json["error"] == "NotFoundError"
-        assert response_json["error_msg"] == f'Workspace "workspace_testing" not found.'
+        assert response_json["error_msg"] == f'Workspace "{test_workspace_info.workspace_default_name}" not found.'
         assert response_json["msg"] is None
         assert response_json["data"] is None
     
-    def test_invite_user_workspace_no_invitee_exists_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str]) -> None:
+    def test_invite_user_workspace_no_invitee_exists_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the workspace does not exist, an error will be raised."""
         
         user1, access_token1 = login_user
@@ -230,7 +234,7 @@ class TestInviteUsersToWorkSpaceInputError:
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -239,7 +243,7 @@ class TestInviteUsersToWorkSpaceInputError:
             "/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": "123547819239872",
             },
             headers={"Authorization": f"Bearer {access_token1}"}
@@ -252,7 +256,7 @@ class TestInviteUsersToWorkSpaceInputError:
         assert response_json["msg"] is None
         assert response_json["data"] is None
     
-    def test_invite_user_workspace_invitee_already_joined_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]]) -> None:
+    def test_invite_user_workspace_invitee_already_joined_raises(self, client: TestClient, login_users: Tuple[Tuple[TestUserInfo, str], Tuple[TestUserInfo, str]], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the workspace does not exist, an error will be raised."""
 
         user1, access_token1 = login_users[0]
@@ -262,7 +266,7 @@ class TestInviteUsersToWorkSpaceInputError:
             "/api/workspace/",
             json = {
                 "username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -271,7 +275,7 @@ class TestInviteUsersToWorkSpaceInputError:
             "/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": user2.username
             },
             headers={"Authorization": f"Bearer {access_token1}"}
@@ -281,7 +285,7 @@ class TestInviteUsersToWorkSpaceInputError:
             "/api/workspace/invite/",
             json = {
                 "owner_username": user1.username,
-                "workspace_default_name": "workspace_testing",
+                "workspace_default_name": test_workspace_info.workspace_default_name,
                 "invitee_username": user2.username,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
@@ -290,6 +294,6 @@ class TestInviteUsersToWorkSpaceInputError:
         assert response.status_code == status.HTTP_409_CONFLICT
         response_json = response.json()
         assert response_json["error"] == "DuplicateError"
-        assert response_json["error_msg"] == f'User "{user2.username}" has already joined workspace "workspace_testing".'
+        assert response_json["error_msg"] == f'User "{user2.username}" has already joined workspace "{test_workspace_info.workspace_default_name}".'
         assert response_json["msg"] is None
         assert response_json["data"] is None
