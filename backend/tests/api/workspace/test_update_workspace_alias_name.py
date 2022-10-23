@@ -45,7 +45,7 @@ class TestChangeWorkspaceAlias():
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "{test_workspace_info.workspace_default_name}" alias to "{test_workspace_info.workspace_alias}" successfully.'
+        assert response_json["msg"] == f'User "{user1.username}" has changed the workspace "{test_workspace_info.workspace_default_name}" alias from "None" to "{test_workspace_info.workspace_alias}" successfully.'
 
         with DatabaseConnection() as db:
             query_user1: Account = db.query(Account).filter(Account.username == user1.username).one()
@@ -276,6 +276,41 @@ class TestUsersleaveWorkspaceTokenError:
 
 class TestUserChangeWorkSpaceAliasInputError:
     """Test the user change workspace alias with input error."""
+
+    def test_change_workspace_user_not_exists_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
+        """Test that if the user does not exist, an error will be raised."""
+
+        user, access_token = login_user
+
+        user_does_not_exist = "user_does_not_exist"
+
+        leaky_access_token = create_token(user_does_not_exist, 100)
+
+        client.post(
+            "/api/workspace/",
+            json = {
+                "username": user.username,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+            },
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+        response = client.put(
+            "/api/workspace/alias/",
+            json = {
+                "username": user_does_not_exist,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
+            },
+            headers={"Authorization": f"Bearer {leaky_access_token}"}
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        response_json = response.json()
+        assert response_json["error"] == "NotFoundError"
+        assert response_json["error_msg"] == f'User "{user_does_not_exist}" not found.'
+        assert response_json["msg"] is None
+        assert response_json["data"] is None
 
     def test_user_change_workspace_alias_no_workspace_exists_raises(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo) -> None:
         """Test that if the workspace does not exist, an error will be raised."""

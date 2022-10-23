@@ -430,6 +430,6 @@ class TestUserDeleteTodoListInputError:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         response_json = response.json()
         assert response_json["error"] == "NotFoundError"
-        assert response_json["error_msg"] == f'Todo list "{todolist_id_not_exists}" not found.'
+        assert response_json["error_msg"] == f'Todo list of id "{todolist_id_not_exists}" not found in workspace "{test_workspace_info.workspace_default_name}".'
         assert response_json["msg"] is None
         assert response_json["data"] is None

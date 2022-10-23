@@ -87,7 +87,7 @@ class TestChangeTodo:
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'Content of todo "testing" has been modified in todo list "{test_todolist_info.todolist_name}" workspace "{test_workspace_info.workspace_default_name}" successfully.'
+        assert response_json["msg"] == f'Content of todo "testing" has been modified in todo list "{test_todolist_info.todolist_name}" in workspace "{test_workspace_info.workspace_default_name}" successfully.'
 
         with DatabaseConnection() as db:
             result = db.query(Todo).filter(Todo.name == "new_testing", Todo.todolist_id == int(create_todolist_response.json()["data"])).one()
@@ -184,7 +184,7 @@ class TestChangeTodo:
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert response_json["data"] is None
-        assert response_json["msg"] == f'Content of todo "testing" has been modified in todo list "{test_todolist_info.todolist_name}" workspace "{test_workspace_info.workspace_default_name}" successfully.'
+        assert response_json["msg"] == f'Content of todo "testing" has been modified in todo list "{test_todolist_info.todolist_name}" in workspace "{test_workspace_info.workspace_default_name}" successfully.'
 
         with DatabaseConnection() as db:
             result = db.query(Todo).filter(Todo.name == "new_testing", Todo.todolist_id == int(create_todolist_response.json()["data"])).one()

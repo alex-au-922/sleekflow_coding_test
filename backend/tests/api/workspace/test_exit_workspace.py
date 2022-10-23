@@ -5,8 +5,8 @@ from fastapi.testclient import TestClient
 import jwt # type: ignore
 from config.auth_tokens_config import AUTH_TOKENS_CONFIG
 from data_models import DatabaseConnection
-from data_models.models import Account
-from ...mock_data import TestUserInfo, TestWorkspaceInfo
+from data_models.models import Account, TodoList, Todo
+from ...mock_data import TestUserInfo, TestWorkspaceInfo, TestTodoListInfo
 
 def create_token(username: str, exp_time: int) -> str:
     """Return an expired token"""
@@ -46,11 +46,7 @@ class TestUserLeaveWorkspace():
             assert len(query_user2.workspaces) == 1
 
         response = client.delete(
-            "/api/workspace/",
-            json = {
-                "username": user2.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-            },
+            "/api/workspace/?username={}&workspace_default_name={}".format(user2.username, test_workspace_info.workspace_default_name),
             headers={"Authorization": f"Bearer {access_token2}"}
         )
 
@@ -95,11 +91,7 @@ class TestUserLeaveWorkspace():
             assert len(query_user2.workspaces) == 1
 
         response = client.delete(
-            "/api/workspace/",
-            json = {
-                "username": user1.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-            },
+            "/api/workspace/?username={}&workspace_default_name={}".format(user1.username, test_workspace_info.workspace_default_name),
             headers={"Authorization": f"Bearer {access_token1}"}
         )
 
@@ -137,11 +129,7 @@ class TestUsersleaveWorkspaceTokenError:
         )
 
         response = client.delete(
-            "/api/workspace/",
-            json = {
-                "username": user1.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-            },
+            "/api/workspace/?username={}&workspace_default_name={}".format(user1.username, test_workspace_info.workspace_default_name),
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -166,11 +154,7 @@ class TestUsersleaveWorkspaceTokenError:
         )
 
         response = client.delete(
-            "/api/workspace/",
-            json = {
-                "username": user1.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-            },
+            "/api/workspace/?username={}&workspace_default_name={}".format(user1.username, test_workspace_info.workspace_default_name),
             headers={"Authorization": f"Bearer {access_token1}1"}
         )
 
@@ -199,11 +183,7 @@ class TestUsersleaveWorkspaceTokenError:
         )
 
         response = client.delete(
-            "/api/workspace/",
-            json = {
-                "username": user1.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-            },
+            "/api/workspace/?username={}&workspace_default_name={}".format(user1.username, test_workspace_info.workspace_default_name),
             headers={"Authorization": f"Bearer {expired_access_token}"}
         )
 
@@ -224,11 +204,7 @@ class TestUserLeaveWorkSpaceInputError:
         user1, access_token1 = login_user
 
         response = client.delete(
-            "/api/workspace/",
-            json = {
-                "username": user1.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-            },
+            "/api/workspace/?username={}&workspace_default_name={}".format(user1.username, test_workspace_info.workspace_default_name),
             headers={"Authorization": f"Bearer {access_token1}"}
         )
 
@@ -258,12 +234,7 @@ class TestUserLeaveWorkSpaceInputError:
         )
 
         response = client.delete(
-            "/api/workspace/",
-            json = {
-                "username": "user_does_not_exist",
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-
-            },
+            "/api/workspace/?username={}&workspace_default_name={}".format(user_does_not_exist, test_workspace_info.workspace_default_name),
             headers={"Authorization": f"Bearer {leaky_access_token}"}
         )
 
@@ -290,11 +261,7 @@ class TestUserLeaveWorkSpaceInputError:
         )
 
         response = client.delete(
-            "/api/workspace/",
-            json = {
-                "username": user2.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-            },
+            "/api/workspace/?username={}&workspace_default_name={}".format(user2.username, test_workspace_info.workspace_default_name),
             headers={"Authorization": f"Bearer {access_token2}"}
         )
 
@@ -304,3 +271,64 @@ class TestUserLeaveWorkSpaceInputError:
         assert response_json["error_msg"] == f'User "{user2.username}" has not joined workspace "{test_workspace_info.workspace_default_name}".'
         assert response_json["msg"] is None
         assert response_json["data"] is None
+
+class TestOwnerLeaveWorkspaceDeleteTodos:
+    """Test when the workspace owner leave his workspace, all the todos and todolists will be deleted"""
+    
+    def test_owner_leave_workspace_delete_todo_todolist(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo, test_todolist_info: TestTodoListInfo) -> None:
+        """Test that if the workspace is deleted, the todo and todo list will also be deleted."""
+
+        user, access_token = login_user
+        
+        client.post(
+            "/api/workspace/",
+            json = {
+                "username": user.username,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+            },
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+        create_todolist_response = client.post(
+            "/api/workspace/todolist/",
+            json = {
+                "username": user.username,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "todolist_name": test_todolist_info.todolist_name,
+            },
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+        created_todo_response = client.post(
+            "/api/workspace/todolist/todo/",
+            json = {
+                "username": user.username,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "todolist_id": int(create_todolist_response.json()["data"]),
+                "todo_name": "testing",
+                "todo_description": "testing",
+                "todo_due_date": "2021-01-01",
+                "todo_status": "created",
+                "todo_priority": "high",
+            },
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+
+        response = client.delete(
+            "/api/workspace/?username={}&workspace_default_name={}".format(user.username, test_workspace_info.workspace_default_name),
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        response_json = response.json()
+        assert response_json["error"] is None
+        assert response_json["error_msg"] is None
+        assert response_json["data"] is None
+        assert response_json["msg"] == f'User "{user.username}" has left workspace "{test_workspace_info.workspace_default_name}" successfully.'
+
+        with DatabaseConnection() as db:
+            todolist: TodoList = db.query(TodoList).filter(TodoList.todolist_id==int(create_todolist_response.json()["data"])).one_or_none()
+            todo: Todo = db.query(Todo).filter(Todo.todo_id==int(created_todo_response.json()["data"])).one_or_none()
+            assert todolist is None
+            assert todo is None

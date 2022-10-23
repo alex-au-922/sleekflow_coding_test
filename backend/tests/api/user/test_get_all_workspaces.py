@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 import jwt # type: ignore
 from config.auth_tokens_config import AUTH_TOKENS_CONFIG
 from data_models import DatabaseConnection
-from data_models.models import Account
+from data_models.models import Account, WorkSpaceAccountLink
 
 class TestUserInfo:
     username: str
@@ -90,12 +90,12 @@ class TestUserGetAllWorkspace():
             headers={"Authorization": f"Bearer {access_token1}"}
         )
 
-        client.put(
+        response = client.put(
             "/api/workspace/alias/",
             json = {
                 "username": user1.username,
                 "workspace_default_name": test_workspace_info.workspace_default_name,
-                "workspace_alias": test_workspace_info.workspace_alias,
+                "new_workspace_alias": test_workspace_info.workspace_alias,
             },
             headers={"Authorization": f"Bearer {access_token1}"}
         )
@@ -107,7 +107,7 @@ class TestUserGetAllWorkspace():
 
         mock_api_result = [{
             "workspace_default_name": test_workspace_info.workspace_default_name,
-            "workspace_alias": test_workspace_info.workspace_alias,
+            "workspace_alias": test_workspace_info.workspace_alias
         }]
 
         assert response.status_code == status.HTTP_200_OK

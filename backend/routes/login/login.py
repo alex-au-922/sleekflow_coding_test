@@ -7,7 +7,6 @@ from data_models import DatabaseConnection
 from data_models.models import Account, Login
 from util.exceptions import InvalidCredentialsError
 from util.helper.auth import JWTHandler, RefreshTokenHandler
-import traceback 
 
 router = APIRouter()
 
@@ -82,17 +81,6 @@ def validate_user_login(user_login: LoginModel) -> JSONResponse:
             content={
                 "error": InvalidCredentialsError.__name__,
                 "error_msg": "Invalid credentials.",
-                "data": None,
-                "msg": None,
-            }
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "error": e.__class__.__name__,
-                "error_msg": str(e),
                 "data": None,
                 "msg": None,
             }

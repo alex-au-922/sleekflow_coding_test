@@ -45,7 +45,7 @@ class TestCreateTodoList:
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert isinstance(response_json["data"], int)
-        assert response_json["msg"] == f'Todolist "{test_todolist_info.todolist_name}" in workspace "{test_workspace_info.workspace_default_name}" created successfully.'
+        assert response_json["msg"] == f'Todo list "{test_todolist_info.todolist_name}" in workspace "{test_workspace_info.workspace_default_name}" created successfully.'
 
         with DatabaseConnection() as db:
             result: TodoList = db.query(TodoList).filter(TodoList.todolist_name == test_todolist_info.todolist_name).one()
@@ -95,7 +95,7 @@ class TestCreateTodoList:
         assert response_json["error"] is None
         assert response_json["error_msg"] is None
         assert isinstance(response_json["data"], int)
-        assert response_json["msg"] == f'Todolist "{test_todolist_info.todolist_name}" in workspace "{test_workspace_info.workspace_default_name}" created successfully.'
+        assert response_json["msg"] == f'Todo list "{test_todolist_info.todolist_name}" in workspace "{test_workspace_info.workspace_default_name}" created successfully.'
 
         with DatabaseConnection() as db:
             result: TodoList = db.query(TodoList).filter(TodoList.todolist_name == test_todolist_info.todolist_name).one()

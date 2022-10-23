@@ -1,0 +1,2104 @@
+openapi: 3.0.2
+info:
+  title: SleekFlow TODOs API Coding Test
+  version: 0.9.0
+paths:
+  /api/healthcheck/:
+    get:
+      tags:
+        - healthcheck
+      summary: Healthcheck
+      description: Healthcheck endpoint.
+      operationId: healthcheck_api_healthcheck__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: OK
+                data: null
+                error: null
+                error_msg: null
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/user/:
+    post:
+      tags:
+        - user
+      summary: Create User
+      description: Create a user.
+      operationId: create_user_api_user__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserModel'
+            example:
+              username: testing
+              email: abc@hello.com
+              password: qwqjdkjwlqrqo
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: 'User "testing" created successfully.'
+                data: null
+                error: null
+                error_msg: null
+        '409':
+          description: Duplicate Error on username / email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: DuplicateError
+                error_msg: Username "testing" already exists.
+        '422':
+          description: Validation Error on empty username / invalid email format / too short password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: ValidationError
+                error_msg: Username cannot be empty
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/user/password/:
+    put:
+      tags:
+        - user
+      summary: Update User Password
+      description: User update their password
+      operationId: update_user_password_api_user_password__put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordModel'
+            example:
+              username: testin
+              old_password: qwqjdkjwlqrq
+              new_password: qwqjdkjwl
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: "Password updated successfully."
+                data: null
+                error: null
+                error_msg: null
+        '400':
+          description: Bad Request due to Invalid Credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "InvalidCredentialsError"
+                error_msg: "Invalid credentials."
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: "Password too short"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/user/workspace/:
+    get:
+      tags:
+        - user
+      summary: Get All Workspaces
+      description: For the user with username, get all workspaces he or she has.
+      operationId: get_all_workspaces_api_user_workspace__get
+      parameters:
+        - required: true
+          schema:
+            title: Username
+            type: string
+          name: username
+          in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: 'Get all workspaces joined by "testing" successfully.'
+                data: 
+                  - workspace_default_name: testing
+                    workspace_alias: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/login/:
+    post:
+      tags:
+        - login
+      summary: Validate User Login
+      description: Validate a user login.
+      operationId: validate_user_login_api_login__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginModel'
+            examples:
+              username:
+                value:
+                  input_field: testing
+                  password: qwqjdkjwlqrqo
+              email:
+                value:
+                  input_field: abc@hello.com
+                  password: qwqjdkjwlqrqo
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/ResponseModel'
+                example:
+                  msg: "Login successful."
+                  data: 
+                    access_token: 123456
+                    refresh_token: 43214
+                    expires_in: 100000000
+                    type: Bearer
+                  error: null
+                  error_msg: null
+        '400':
+          description: Bad Request due to Invalid Credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "InvalidCredentialsError"
+                error_msg: "Invalid credentials."
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/refresh/:
+    post:
+      tags:
+        - refresh
+      summary: Refresh Refresh Access Tokens
+      description: Refresh the refresh and access tokens
+      operationId: refresh_refresh_access_tokens_api_refresh__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshModel'
+            example:
+              username: testing
+              refresh_token: 12345123
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/ResponseModel'
+                example:
+                  msg: "Refreshed access and refresh tokens."
+                  data: 
+                    access_token: 123456
+                    refresh_token: 43214
+                    expires_in: 100000000
+                    type: Bearer
+                  error: null
+                  error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: User Not Found
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/ResponseModel'
+                example:
+                  msg: null
+                  data: null
+                  error: NotFoundError
+                  error_msg: User "testing" not found.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/workspace/todolists/todos/:
+    get:
+      tags:
+        - workspace
+      summary: Get All Todolists Todos
+      description: Get a list of all workspaces
+      operationId: get_all_todolists_todos_api_workspace_todolists_todos__get
+      parameters:
+        - required: true
+          schema:
+            title: Username
+            type: string
+          name: username
+          in: query
+        - required: true
+          schema:
+            title: Workspace Default Name
+            type: string
+          name: workspace_default_name
+          in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/ResponseModel'
+                example:
+                  msg: Get all todolists and corresponding todos in workspace "workspace_testing" successfully.
+                  data: 
+                    - todolist_id: 1
+                      todolist_name: todolist_testing
+                      todos:
+                        - todo_id: 1
+                          todo_name: testing
+                          todo_description: testing
+                          todo_due_date: 2010-01-01 00:00:00
+                          todo_priority: low
+                          todo_status: None
+                          todo_last_modified: 2022-10-21 13:42:21
+                        - todo_id: 2
+                          todo_name: testing2
+                          todo_description: new_tesing
+                          todo_due_date: 2010-01-01 00:00:01
+                          todo_priority: high
+                          todo_status: finished
+                          todo_last_modified: 2022-10-21 13:41:21
+                  error: null
+                  error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/workspace/:
+    post:
+      tags:
+        - workspace
+      summary: Create Workspace
+      description: Create a workspace.
+      operationId: create_workspace_api_workspace__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkspaceModel'
+            example:
+              username: testing,
+              workspace_default_name: workspace_testing
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: Workspace "workspace_testing" created successfully.
+                data: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error on user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: NotFoundError
+                error_msg: User "testing" not found.
+        '409':
+          description: Duplicate Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: NotFoundError
+                error_msg: Workspace "workspace_testing" already exists.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: ValidationError
+                error_msg: Workspace default name cannot be empty!
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+    delete:
+      tags:
+        - workspace
+      summary: Leave Workspace
+      description: When a user wants to leave the workspace
+      operationId: leave_workspace_api_workspace__delete
+      parameters:
+        - required: true
+          schema:
+            title: Username
+            type: string
+          name: username
+          in: query
+        - required: true
+          schema:
+            title: Workspace Default Name
+            type: string
+          name: workspace_default_name
+          in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: User "testing" has left workspace "workspace_testing" successfully.
+                data: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/workspace/invite/:
+    put:
+      tags:
+        - workspace
+      summary: Invite User To Workspace
+      description: Invite user to a workspace
+      operationId: invite_user_to_workspace_api_workspace_invite__put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteWorkspaceModel'
+            example:
+              owner_username: testing1,
+              workspace_default_name: workspace_testing,
+              invitee_username: testing2,
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: Invited user "testing2" to workspace "workspace_testing" successfully
+                data: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+        '409':
+          description: Duplicate Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: NotFoundError
+                error_msg: User "testing2" has already joined workspace "workspace_testing"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/workspace/alias/:
+    put:
+      tags:
+        - workspace
+      summary: Change Workspace Alias
+      operationId: change_workspace_alias_api_workspace_alias__put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeWorkspaceAliasModel'
+            example:
+              username: testing
+              workspace_default_name: workspace_testing
+              new_workspace_alias: workspace_testing2
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: User "testing" has changed the workspace "workspace_testing" alias from "None" to "workspace_testing2" successfully
+                data: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/workspace/todolist/todos/:
+    get:
+      tags:
+        - todolist
+      summary: Get Todos
+      description: Get all todos and filter or sort the data on request
+      operationId: get_todos_api_workspace_todolist_todos__get
+      parameters:
+        - required: true
+          schema:
+            title: Username
+            type: string
+          name: username
+          in: query
+        - required: true
+          schema:
+            title: Workspace Default Name
+            type: string
+          name: workspace_default_name
+          in: query
+        - required: true
+          schema:
+            title: Todolist Id
+            type: integer
+          name: todolist_id
+          in: query
+        - required: false
+          schema:
+            title: Name
+            pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+            type: array
+            items:
+              pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+              type: string
+            default: []
+          name: name
+          in: query
+        - required: false
+          schema:
+            title: Description
+            pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+            type: array
+            items:
+              pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+              type: string
+            default: []
+          name: description
+          in: query
+        - required: false
+          schema:
+            title: Due Date
+            pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+            type: array
+            items:
+              pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+              type: string
+            default: []
+          name: due_date
+          in: query
+        - required: false
+          schema:
+            title: Priority
+            pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+            type: array
+            items:
+              pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+              type: string
+            default: []
+          name: priority
+          in: query
+        - required: false
+          schema:
+            title: Status
+            pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+            type: array
+            items:
+              pattern: ^\[(eq|gt|lt|ge|le|ne)\].*$
+              type: string
+            default: []
+          name: status
+          in: query
+        - required: false
+          schema:
+            title: Sort By
+            enum:
+              - name
+              - description
+              - due_date
+              - status
+              - priority
+            type: string
+          name: sort_by
+          in: query
+        - required: false
+          schema:
+            title: Order By
+            enum:
+              - asc
+              - desc
+            type: string
+            default: asc
+          name: order_by
+          in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: Get all todos in todolist "todo_testing" in workspace "workspace_testing" successfully.
+                data:
+                  - todo_id: 1
+                    todo_name: testing
+                    todo_description: testing
+                    todo_due_date: 2010-01-01 00:00:00
+                    todo_priority: low
+                    todo_status: None
+                    todo_last_modified: 2022-10-21 13:42:21
+                  - todo_id: 2
+                    todo_name: testing2
+                    todo_description: new_tesing
+                    todo_due_date: 2010-01-01 00:00:01
+                    todo_priority: high
+                    todo_status: finished
+                    todo_last_modified: 2022-10-21 13:41:21
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+                todolist_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Todo list of id "1" is not found in workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                wrong_filter_format:
+                  value:
+                    msg: null
+                    data: null
+                    error: "ValidationError"
+                    error_msg: 1 validation error for Request...
+                wrong_sorting_field:
+                  value:
+                    msg: null
+                    data: null
+                    error: "ValidationError"
+                    error_msg: 1 validation error for Request...
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/workspace/todolist/:
+    put:
+      tags:
+        - todolist
+      summary: Change Todo List Name
+      description: Change the name of a todo list.
+      operationId: change_todo_list_name_api_workspace_todolist__put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeTodoListNameModel'
+            example:
+              username: testing
+              workspace_default_name: workspace_testing
+              todolist_id: 1
+              new_todolist_name: new_todolist_testing
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: User "testing" has changed the name of todolist from "todolist_testing" to "new_todolist_testing" in workspace "workspace_testing" successfully.
+                data: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+                todolist_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Todo list of id "1" is not found in workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+    post:
+      tags:
+        - todolist
+      summary: Create Todo List
+      description: Create a todo list.
+      operationId: create_todo_list_api_workspace_todolist__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoListModel'
+            example:
+              username: testing
+              workspace_default_name: workspace_testing
+              todolist_name: todolist_testing
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: Todo list "todolist_testing" in workspace "workspace_testing" created successfully.
+                data: 1
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+    delete:
+      tags:
+        - todolist
+      summary: Delete Todo List
+      description: Delete a todo list.
+      operationId: delete_todo_list_api_workspace_todolist__delete
+      parameters:
+        - required: true
+          schema:
+            title: Username
+            type: string
+          name: username
+          in: query
+        - required: true
+          schema:
+            title: Workspace Default Name
+            type: string
+          name: workspace_default_name
+          in: query
+        - required: true
+          schema:
+            title: Todolist Id
+            type: integer
+          name: todolist_id
+          in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: User "testing" has deleted todolist "todolist_testing" in workspace "workspace_testing" successfully.
+                data: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+                todolist_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Todo list of id "1" is not found in workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+  /api/workspace/todolist/todo/:
+    put:
+      tags:
+        - todo
+      summary: Change Todo
+      description: Change a todo.
+      operationId: change_todo_api_workspace_todolist_todo__put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeTodoModel'
+            example:
+              username: testing
+              workspace_default_name: workspace_testing
+              todolist_id: 2
+              todo_id: 1
+              todo_name: new_testing
+              todo_description: new_testing
+              todo_due_date: 2021-01-02
+              todo_status: pending
+              todo_priority: low
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: Content of todo "new_testing" has been modified in todo list "todolist_testing" in workspace "workspace_testing" successfully.
+                data: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+                todolist_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Todo list of id "2" is not found in workspace "workspace_testing".
+                todo_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Todo of id "1" is not found in todo list of id "2" in workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+    post:
+      tags:
+        - todo
+      summary: Create Todo
+      description: Create a todo.
+      operationId: create_todo_api_workspace_todolist_todo__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoModel'
+            example:
+              username: testing,
+              workspace_default_name: workspace_testing
+              todolist_id: 1
+              todo_name: testing
+              todo_description: testing
+              todo_due_date: 2021-01-01
+              todo_status: created
+              todo_priority: high
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: Todo "testing" in todo list "todolist_testing" in workspace "workspace_testing" created successfully.
+                data: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+                todolist_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Todo list of id "1" is not found in workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+    delete:
+      tags:
+        - todo
+      summary: Delete Todo
+      description: Delete a todo.
+      operationId: delete_todo_api_workspace_todolist_todo__delete
+      parameters:
+        - required: true
+          schema:
+            title: Username
+            type: string
+          name: username
+          in: query
+        - required: true
+          schema:
+            title: Workspace Default Name
+            type: string
+          name: workspace_default_name
+          in: query
+        - required: true
+          schema:
+            title: Todolist Id
+            type: integer
+          name: todolist_id
+          in: query
+        - required: true
+          schema:
+            title: Todo Id
+            type: integer
+          name: todo_id
+          in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: Todo "todo_testing" has been deleted in todo list "todolist_testing" in workspace "workspace_testing" successfully.
+                data: null
+                error: null
+                error_msg: null
+        '401':
+          description: Unauthorized Error / Token Expired Error / Invalid Token Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                unauthorized_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: UnauthorizedError
+                    error_msg: Unauthorized action.
+                token_expired_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: TokenExpiredError
+                    error_msg: Token has expired.
+                invalid_token_error:
+                  value:
+                    msg: null
+                    data: null
+                    error: InvalidTokenError
+                    error_msg: Invalid token.
+        '404':
+          description: Not Found Error, on User / Workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              examples:
+                user_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" not found.
+                workspace_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Workspace "workspace_testing" not found.
+                user_not_in_workspace:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: User "testing" has not joined workspace "workspace_testing".
+                todolist_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Todo list of id "2" is not found in workspace "workspace_testing".
+                todo_not_found:
+                  value:
+                    msg: null
+                    data: null
+                    error: NotFoundError
+                    error_msg: Todo of id "1" is not found in todo list of id "2" in workspace "workspace_testing".
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: "ValidationError"
+                error_msg: Some Error Message
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseModel'
+              example:
+                msg: null
+                data: null
+                error: InternalServerError
+                error_msg: Unknown Error
+components:
+  schemas:
+    ChangeTodoListNameModel:
+      title: ChangeTodoListNameModel
+      required:
+        - username
+        - workspace_default_name
+        - todolist_id
+        - new_todolist_name
+      type: object
+      properties:
+        username:
+          title: Username
+          type: string
+        workspace_default_name:
+          title: Workspace Default Name
+          type: string
+        todolist_id:
+          title: Todolist Id
+          type: integer
+        new_todolist_name:
+          title: New Todolist Name
+          type: string
+      description: Create todolist model class for api
+    ChangeTodoModel:
+      title: ChangeTodoModel
+      required:
+        - username
+        - workspace_default_name
+        - todolist_id
+        - todo_id
+      type: object
+      properties:
+        username:
+          title: Username
+          type: string
+        workspace_default_name:
+          title: Workspace Default Name
+          type: string
+        todolist_id:
+          title: Todolist Id
+          type: integer
+        todo_id:
+          title: Todo Id
+          type: integer
+        todo_name:
+          title: Todo Name
+          type: string
+        todo_description:
+          title: Todo Description
+          type: string
+        todo_due_date:
+          title: Todo Due Date
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              format: date
+        todo_status:
+          title: Todo Status
+          type: string
+        todo_priority:
+          title: Todo Priority
+          type: string
+      description: Auth model class for api
+    ChangeWorkspaceAliasModel:
+      title: ChangeWorkspaceAliasModel
+      required:
+        - username
+        - workspace_default_name
+        - new_workspace_alias
+      type: object
+      properties:
+        username:
+          title: Username
+          type: string
+        workspace_default_name:
+          title: Workspace Default Name
+          type: string
+        new_workspace_alias:
+          title: New Workspace Alias
+          type: string
+      description: Create workspace model class for api
+    CreateTodoListModel:
+      title: CreateTodoListModel
+      required:
+        - username
+        - workspace_default_name
+        - todolist_name
+      type: object
+      properties:
+        username:
+          title: Username
+          type: string
+        workspace_default_name:
+          title: Workspace Default Name
+          type: string
+        todolist_name:
+          title: Todolist Name
+          type: string
+      description: Create todolist model class for api
+    CreateTodoModel:
+      title: CreateTodoModel
+      required:
+        - username
+        - workspace_default_name
+        - todolist_id
+        - todo_name
+      type: object
+      properties:
+        username:
+          title: Username
+          type: string
+        workspace_default_name:
+          title: Workspace Default Name
+          type: string
+        todolist_id:
+          title: Todolist Id
+          type: integer
+        todo_name:
+          title: Todo Name
+          type: string
+        todo_description:
+          title: Todo Description
+          type: string
+        todo_due_date:
+          title: Todo Due Date
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              format: date
+        todo_status:
+          title: Todo Status
+          type: string
+        todo_priority:
+          title: Todo Priority
+          type: string
+      description: Auth model class for api
+    CreateUserModel:
+      title: CreateUserModel
+      required:
+        - username
+        - email
+        - password
+      type: object
+      properties:
+        username:
+          title: Username
+          type: string
+        email:
+          title: Email
+          type: string
+        password:
+          title: Password
+          type: string
+      description: Create user model class for api
+    CreateWorkspaceModel:
+      title: CreateWorkspaceModel
+      required:
+        - username
+        - workspace_default_name
+      type: object
+      properties:
+        username:
+          title: Username
+          type: string
+        workspace_default_name:
+          title: Workspace Default Name
+          type: string
+      description: Create workspace model class for api
+    HTTPValidationError:
+      title: HTTPValidationError
+      type: object
+      properties:
+        detail:
+          title: Detail
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+    InviteWorkspaceModel:
+      title: InviteWorkspaceModel
+      required:
+        - owner_username
+        - workspace_default_name
+        - invitee_username
+      type: object
+      properties:
+        owner_username:
+          title: Owner Username
+          type: string
+        workspace_default_name:
+          title: Workspace Default Name
+          type: string
+        invitee_username:
+          title: Invitee Username
+          type: string
+      description: Create workspace model class for api
+    LoginModel:
+      title: LoginModel
+      required:
+        - input_field
+        - password
+      type: object
+      properties:
+        input_field:
+          title: Input Field
+          type: string
+        password:
+          title: Password
+          type: string
+      description: Create user model class for api
+    RefreshModel:
+      title: RefreshModel
+      required:
+        - username
+        - refresh_token
+      type: object
+      properties:
+        username:
+          title: Username
+          type: string
+        refresh_token:
+          title: Refresh Token
+          type: string
+      description: Create user model class for api
+    UpdatePasswordModel:
+      title: UpdatePasswordModel
+      required:
+        - username
+        - old_password
+        - new_password
+      type: object
+      properties:
+        username:
+          title: Username
+          type: string
+        old_password:
+          title: Old Password
+          type: string
+        new_password:
+          title: New Password
+          type: string
+      description: Update password model class for api
+    ResponseModel:
+      title: ResponseModel
+      required:
+        - msg
+        - data
+        - error
+        - error_msg
+      type: object
+      properties:
+        msg:
+          title: Message
+          type: string
+        data:
+          title: Return data
+          type: string
+        error:
+          title: Error Type
+          type: string
+        error_msg:
+          title: Error Message
+          type: string
+      description: Response model
+    ValidationError:
+      title: ValidationError
+      required:
+        - loc
+        - msg
+        - type
+      type: object
+      properties:
+        loc:
+          title: Location
+          type: array
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string

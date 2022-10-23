@@ -2,7 +2,7 @@ from typing import Tuple
 from fastapi import status
 from fastapi.testclient import TestClient
 from data_models import DatabaseConnection
-from data_models.models import WorkSpace
+from data_models.models import Todo, WorkSpace
 import jwt # type: ignore
 from config.auth_tokens_config import AUTH_TOKENS_CONFIG
 import time
@@ -41,12 +41,7 @@ class TestDeleteTodoList:
         )
 
         response = client.delete(
-            "/api/workspace/todolist/",
-            json = {
-                "username": user.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-                "todolist_id": int(create_response.json()["data"]),
-            },
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user.username, test_workspace_info.workspace_default_name, int(create_response.json()["data"])),
             headers={"Authorization": f"Bearer {access_token}"}
         )
 
@@ -98,12 +93,7 @@ class TestDeleteTodoList:
         )
 
         response = client.delete(
-            "/api/workspace/todolist/",
-            json = {
-                "username": user2.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-                "todolist_id": int(create_response.json()["data"]),
-            },
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user2.username, test_workspace_info.workspace_default_name, int(create_response.json()["data"])),
             headers={"Authorization": f"Bearer {access_token2}"}
         )
 
@@ -142,12 +132,7 @@ class TestDeleteTodoListTokenError:
         )
 
         response = client.delete(
-            "/api/workspace/todolist/",
-            json = {
-                "username": user.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-                "todolist_id": int(create_response.json()["data"]),
-            },
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user.username, test_workspace_info.workspace_default_name, int(create_response.json()["data"])),
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -181,12 +166,7 @@ class TestDeleteTodoListTokenError:
         )
 
         response = client.delete(
-            "/api/workspace/todolist/",
-            json = {
-                "username": user.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-                "todolist_id": int(create_response.json()["data"]),
-            },
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user.username, test_workspace_info.workspace_default_name, int(create_response.json()["data"])),
             headers={"Authorization": f"Bearer {access_token}1"}
         )
 
@@ -224,12 +204,7 @@ class TestDeleteTodoListTokenError:
         )
 
         response = client.delete(
-            "/api/workspace/todolist/",
-            json = {
-                "username": user.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-                "todolist_id": int(create_response.json()["data"]),
-            },
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user.username, test_workspace_info.workspace_default_name, int(create_response.json()["data"])),
             headers={"Authorization": f"Bearer {expired_access_token}"}
         )
 
@@ -270,12 +245,7 @@ class TestUserDeleteTodoListInputError:
         non_existing_workspace_name = "non_existing_workspace_name"
 
         response = client.delete(
-            "/api/workspace/todolist/",
-            json = {
-                "username": user.username,
-                "workspace_default_name": non_existing_workspace_name,
-                "todolist_id": int(create_response.json()["data"]),
-            },
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user.username, non_existing_workspace_name, int(create_response.json()["data"])),
             headers={"Authorization": f"Bearer {access_token}"}
         )
 
@@ -315,12 +285,7 @@ class TestUserDeleteTodoListInputError:
         )
 
         response = client.delete(
-            "/api/workspace/todolist/",
-            json = {
-                "username": user_does_not_exist,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-                "todolist_id": int(create_response.json()["data"]),
-            },
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user_does_not_exist, test_workspace_info.workspace_default_name, int(create_response.json()["data"])),
             headers={"Authorization": f"Bearer {leaky_access_token}"}
         )
 
@@ -357,12 +322,7 @@ class TestUserDeleteTodoListInputError:
         )
 
         response = client.delete(
-            "/api/workspace/todolist/",
-            json = {
-                "username": user2.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-                "todolist_id": int(create_response.json()["data"]),
-            },
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user2.username, test_workspace_info.workspace_default_name, int(create_response.json()["data"])),
             headers={"Authorization": f"Bearer {access_token2}"}
         )
         
@@ -400,12 +360,7 @@ class TestUserDeleteTodoListInputError:
         todolist_id_not_exists = int(create_response.json()["data"]) + 1
 
         response = client.delete(
-            "/api/workspace/todolist/",
-            json = {
-                "username": user.username,
-                "workspace_default_name": test_workspace_info.workspace_default_name,
-                "todolist_id": todolist_id_not_exists,
-            },
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user.username, test_workspace_info.workspace_default_name, todolist_id_not_exists),
             headers={"Authorization": f"Bearer {access_token}"}
         )
         
@@ -415,3 +370,63 @@ class TestUserDeleteTodoListInputError:
         assert response_json["error_msg"] == f'Todo list of id "{todolist_id_not_exists}" not found.'
         assert response_json["msg"] is None
         assert response_json["data"] is None
+
+class TestDeleteTodoListDeleteTodo:
+    """Test the delete todo list will also delete todo."""
+
+    def test_delete_todolist_delete_todo(self, client: TestClient, login_user: Tuple[TestUserInfo, str], test_workspace_info: TestWorkspaceInfo, test_todolist_info: TestTodoListInfo) -> None:
+        """Test that if the todo list is deleted, the todo in the todo list will also be deleted."""
+
+        user, access_token = login_user
+        
+        client.post(
+            "/api/workspace/",
+            json = {
+                "username": user.username,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+            },
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+        create_todolist_response = client.post(
+            "/api/workspace/todolist/",
+            json = {
+                "username": user.username,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "todolist_name": test_todolist_info.todolist_name,
+            },
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+        created_todo_response = client.post(
+            "/api/workspace/todolist/todo/",
+            json = {
+                "username": user.username,
+                "workspace_default_name": test_workspace_info.workspace_default_name,
+                "todolist_id": int(create_todolist_response.json()["data"]),
+                "todo_name": "testing",
+                "todo_description": "testing",
+                "todo_due_date": "2021-01-01",
+                "todo_status": "created",
+                "todo_priority": "high",
+            },
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+
+        response = client.delete(
+            "/api/workspace/todolist/?username={}&workspace_default_name={}&todolist_id={}".format(user.username, test_workspace_info.workspace_default_name, int(create_todolist_response.json()["data"])),
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        response_json = response.json()
+        assert response_json["error"] is None
+        assert response_json["error_msg"] is None
+        assert response_json["data"] is None
+        assert response_json["msg"] == f'User "{user.username}" has deleted todolist "{test_todolist_info.todolist_name}" in workspace "{test_workspace_info.workspace_default_name}" successfully.'
+
+        with DatabaseConnection() as db:
+            todo: Todo = db.query(Todo).filter(Todo.todo_id==int(created_todo_response.json()["data"])).one_or_none()
+            assert todo is None
+        
