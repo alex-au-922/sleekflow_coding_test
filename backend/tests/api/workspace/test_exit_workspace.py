@@ -6,15 +6,7 @@ import jwt # type: ignore
 from config.auth_tokens_config import AUTH_TOKENS_CONFIG
 from data_models import DatabaseConnection
 from data_models.models import Account
-
-class TestUserInfo:
-    username: str
-    email: str
-    password: str
-
-class TestWorkspaceInfo:
-    workspace_default_name: str
-    workspace_alias: str
+from ...mock_data import TestUserInfo, TestWorkspaceInfo
 
 def create_token(username: str, exp_time: int) -> str:
     """Return an expired token"""

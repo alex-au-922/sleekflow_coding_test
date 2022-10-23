@@ -13,7 +13,6 @@ def create_token(username: str, exp_time: int) -> str:
     
     return jwt.encode({"username": username, "exp": time.time() + exp_time}, AUTH_TOKENS_CONFIG.secret_key, algorithm=AUTH_TOKENS_CONFIG.algorithm)
 
-
 class TestChangeTodoListName:
     """Test the change todolist name endpoint."""
 

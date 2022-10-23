@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError, NoResultFound # type: ignore
 from util.helper.string import StringHashFactory
 from util.helper.auth import JWTHandler
 from util.exceptions import (DuplicateError, NotFoundError, InternalServerError, InvalidTokenError, TokenExpiredError, UnauthorizedError)
-from typing import Final, List, Optional, Tuple
+from typing import Dict, Final, List, Optional, Tuple
 from sqlalchemy.orm import Query # type: ignore
 
 router = APIRouter()
@@ -17,7 +17,7 @@ jwt_handler = JWTHandler()
 
 hasher: Final = StringHashFactory().get_hasher("blake2b")
 
-@router.get("/")
+@router.get("/todolists/todos/")
 def get_all_todolists_todos(request: Request, username: str, workspace_default_name: str) -> JSONResponse:
     """Get a list of all workspaces"""
     
@@ -49,7 +49,7 @@ def get_all_todolists_todos(request: Request, username: str, workspace_default_n
                 session.query(WorkSpaceAccountLink).filter(WorkSpaceAccountLink.user_id == user.user_id, WorkSpaceAccountLink.workspace_id == workspace.workspace_id).one()
             except NoResultFound:
                 raise NotFoundError(f'User "{username}" has not joined workspace "{workspace_default_name}".')
-            query: Query = (
+            todo_query: Query = (
                 session
                     .query(Todo)
                     .join(TodoList, TodoList.todolist_id == Todo.todolist_id)
@@ -58,43 +58,87 @@ def get_all_todolists_todos(request: Request, username: str, workspace_default_n
                     .join(Account, WorkSpaceAccountLink.user_id == user.user_id)
                     .filter(WorkSpace.workspace_default_name == workspace_default_name)
                     .filter(Account.username == username)
-                    .add_columns(TodoList.todolist_id, TodoList.todolist_name)
+                    .add_columns(TodoList.todolist_id)
             )
-            query_result: List[Tuple[Todo, str, str]] = query.all()
-            todo_details = [
-                {
-                    "todolist_id": todolist_id,
-                    "todolist_name": todolist_name,
+
+            todolist_query: Query = (
+                session
+                    .query(TodoList)
+                    .join(WorkSpace, WorkSpace.workspace_id == TodoList.workspace_id)
+                    .join(WorkSpaceAccountLink, WorkSpaceAccountLink.workspace_id == WorkSpace.workspace_id)
+                    .join(Account, WorkSpaceAccountLink.user_id == user.user_id)
+                    .filter(WorkSpace.workspace_default_name == workspace_default_name)
+                    .filter(Account.username == username)
+            )
+
+            todolist_query_result: List[TodoList] = todolist_query.all()
+            todo_query_result: List[Tuple[Todo, str]] = todo_query.all()
+
+            todo_query_result_map: Dict[str, List[Dict]] = {}
+            for todo, todolist_id in todo_query_result:
+                if todolist_id not in todo_query_result_map:
+                    todo_query_result_map[todolist_id] = []
+                todo_query_result_map[todolist_id].append({
                     "todo_id": todo.todo_id,
                     "todo_name": todo.name,
                     "todo_description": todo.description,
-                    "todo_due_date": todo.due_date,
+                    "todo_due_date": str(todo.due_date),
                     "todo_priority": todo.priority,
                     "todo_status": todo.status,
-                    "todo_last_modified": todo.last_modified,
+                    "todo_last_modified": str(todo.last_modified),
+                })
+
+            query_result = [
+                {
+                    "todolist_id": todolist.todolist_id,
+                    "todolist_name": todolist.todolist_name,
+                    "todos": todo_query_result_map.get(todolist.todolist_id, [])
                 }
-                for todo, todolist_id, todolist_name in query_result
+                for todolist in todolist_query_result
             ]
+
             session.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={
                 "error": None,
                 "error_msg": None,
-                "data": todo_details,
-                "msg": f'Get all todos in workspace "{workspace_default_name}" successfully.',
+                "data": query_result,
+                "msg": f'Get all todolists and corresponding todos in workspace "{workspace_default_name}" successfully.',
             },
         )
-    except NoResultFound as e:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={
-                "error": NotFoundError.__name__,
-                "error_msg": f'User "{username}" not found.',
-                "data": None,
-                "msg": None,
-            },
-        )
+    except NotFoundError as e:
+        print(e)
+        if "Workspace" in str(e):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={
+                    "error": NotFoundError.__name__,
+                    "error_msg": f'Workspace "{workspace_default_name}" not found.',
+                    "data": None,
+                    "msg": None,
+                },
+            )
+        elif "User" in str(e) and "has not joined" in str(e):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={
+                    "error": NotFoundError.__name__,
+                    "error_msg": f'User "{username}" has not joined workspace "{workspace_default_name}".',
+                    "data": None,
+                    "msg": None,
+                },
+            )
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={
+                    "error": NotFoundError.__name__,
+                    "error_msg": f'User "{username}" not found.',
+                    "data": None,
+                    "msg": None,
+                },
+            )
     except UnauthorizedError as e:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
